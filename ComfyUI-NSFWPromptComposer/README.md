@@ -1,6 +1,10 @@
 # ComfyUI-NSFWPromptComposer
 
-ComfyUI custom nodes that mirror the web **性爱视频提示词组合器** (`../index.html`).
+> **这是本仓库里唯一的 ComfyUI 插件目录。**  
+> 可视化网页程序在上级目录 [`../web-app/`](../web-app/)，不要把 `web-app` 装进 ComfyUI。  
+> 仓库总览见 [`../README.md`](../README.md)。
+
+ComfyUI custom nodes that mirror the web **性爱视频提示词组合器** (`../web-app/index.html`).
 
 **Hard boundary:** 21+ consenting fictional adults only. No minors, no age ambiguity, no real celebrities. Nodes emit **prompt text only** — they do not generate or host adult media.
 
@@ -42,7 +46,7 @@ python3 sync_from_data_js.py
 ]
 ```
 
-`category` ∈ `foreplay` | `oral` | `sexPoses`. Ids come from `prompt_data.json` (same bricks as `../data.js`).
+`category` ∈ `foreplay` | `oral` | `sexPoses`. Ids come from `prompt_data.json` (same bricks as `../web-app/data.js`).
 
 ### Selection JSON schema
 
@@ -92,10 +96,10 @@ python3 -c "from nodes import NODE_CLASS_MAPPINGS; print(sorted(NODE_CLASS_MAPPI
 
 ## Data sync
 
-Brick catalog is shared with the web UI. Prefer:
+Brick catalog is shared with `../web-app/data.js`. Prefer:
 
 ```bash
-python3 sync_from_data_js.py   # reads ../data.js → prompt_data.json
+python3 sync_from_data_js.py   # reads ../web-app/data.js → prompt_data.json
 ```
 
 Do not hand-edit two copies of pose/scene lists.

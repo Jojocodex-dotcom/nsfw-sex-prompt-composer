@@ -16,8 +16,8 @@ description: >
 - **交付物**：提示词模板与组合规则（及本仓库可视化组合器），不是色情媒体文件。
 - 若用户请求越界内容 → 拒绝并重申边界。
 
-**可视化程序（优先给用户）**：`/workspace/nsfw-sex-prompt-skill/index.html`  
-模块源数据：`data.js`（本 SKILL 与 UI **共用同一套积木概念**）。
+**可视化程序（优先给用户）**：`web-app/index.html`  
+模块源数据：`web-app/data.js`（本 SKILL 与 UI **共用同一套积木概念**）。
 
 ---
 
@@ -34,7 +34,7 @@ description: >
 
 ### 2) 从模块勾选组合
 
-打开 `index.html` 点选，或按下列模块 ID 与用户确认（数据在 `data.js`）：
+打开 `web-app/index.html` 点选，或按下列模块 ID 与用户确认（数据在 `web-app/data.js`）：
 
 | 模块 | 选择规则 | 约数量 |
 |------|----------|--------|
@@ -56,7 +56,7 @@ description: >
 - 用 UI「复制提示词 / 复制负面」，或按下方骨架手写。
 - **I2V**：少写或不写外貌；写动作时序、镜头、一致性锁、声景（H3）。
 - **Qwen Image**：姿势几何与场景细节写细；身份可由参考图承担时勿复述脸。
-- **Negative**：合并 `data.js` → `negatives.common` + 模式/模型附加项。
+- **Negative**：合并 `web-app/data.js` → `negatives.common` + 模式/模型附加项。
 
 ### 4) 分别给出两套成品
 
@@ -137,7 +137,7 @@ Animate only motion reachable from the current pose.
 
 ## 积木速查（标签 → 粘贴片段）
 
-> 完整中英字段以 `data.js` 为准；此处列类别与用法。UI 点选即可生成。
+> 完整中英字段以 `web-app/data.js` 为准；此处列类别与用法。UI 点选即可生成。
 
 ### 主体
 
@@ -158,7 +158,7 @@ Animate only motion reachable from the current pose.
 
 ### 节奏 / 镜头 / 表情 / 服装 / 弧
 
-见 `data.js` 中 `rhythm` `cameras` `expressions` `wardrobe` `arcs`。
+见 `web-app/data.js` 中 `rhythm` `cameras` `expressions` `wardrobe` `arcs`。
 
 ---
 
@@ -225,4 +225,4 @@ contact at pelvis clear; soft bedside key light from left; photorealistic adult 
 - [ ] 区分 MINIMAX H3 / QWEN IMAGE 2.1  
 - [ ] 积木可自由组合；姿势 ≥25、场景 ≥15  
 - [ ] 输出含 prompt + negative + 双模式成品  
-- [ ] 可视化入口 `index.html` 可用；数据来自 `data.js`  
+- [ ] 可视化入口 `web-app/index.html` 可用；数据来自 `web-app/data.js`  

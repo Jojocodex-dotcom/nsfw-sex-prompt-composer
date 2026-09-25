@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>性爱视频提示词组合器 · 21+</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <div class="age-banner" id="ageBanner">⚠ 21+ ONLY</div>
+
+    <header class="hero">
+      <div>
+        <h1>性爱视频提示词组合器</h1>
+        <div class="sub">MINIMAX H3 / QWEN IMAGE 2.1 · 积木点选 · 动作时间轴 · I2V &amp; 多参考 · <span id="stats"></span></div>
+      </div>
+      <div class="lang-toggle">
+        <label for="langSelect">输出语言</label>
+        <select id="langSelect">
+          <option value="both" selected>中英双语</option>
+          <option value="en">英文为主</option>
+          <option value="zh">中文为主</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="controls-top">
+      <div class="panel">
+        <h2>模型</h2>
+        <div class="seg">
+          <button type="button" class="active" data-model="minimax_h3">MINIMAX H3</button>
+          <button type="button" data-model="qwen_image">QWEN IMAGE 2.1</button>
+        </div>
+        <p class="hint" id="modelHint">偏运动、运镜、声景；I2V 少写外貌</p>
+      </div>
+      <div class="panel">
+        <h2>模式</h2>
+        <div class="seg">
+          <button type="button" class="active" data-mode="i2v">图文生视频 (I2V)</button>
+          <button type="button" data-mode="multiref">多参考生视频 (Multi-ref)</button>
+        </div>
+        <p class="hint" id="modeHint">首帧/参考图定身份；提示词写动作时序与运镜</p>
+      </div>
+    </div>
+
+    <div class="panel timeline-panel" id="timelinePanel">
+      <div class="timeline-head">
+        <h2>动作时间轴 / 一套组合</h2>
+        <span class="count" id="tlTotal">总时长 0s · 0 段</span>
+      </div>
+      <div class="controls-top" style="margin-bottom:10px">
+        <div>
+          <h2 style="margin-bottom:8px">剪辑策略</h2>
+          <div class="seg" id="editModeSeg">
+            <button type="button" class="active" data-edit="continuous">一镜到底</button>
+            <button type="button" data-edit="multicut">多镜头</button>
+          </div>
+          <p class="hint" id="editHint">单一连续镜头；动作之间用 morph/transition 衔接，保持身份、接触点、运镜平滑</p>
+        </div>
+        <div>
+          <h2 style="margin-bottom:8px">快捷</h2>
+          <div class="actions">
+            <button type="button" class="btn primary" id="btnAddSeg">＋ 添加动作段</button>
+            <button type="button" class="btn" id="btnSeedTl">从已选积木填充</button>
+            <button type="button" class="btn ghost" id="btnClearTl">清空时间轴</button>
+          </div>
+        </div>
+      </div>
+      <div id="timelineRows" class="timeline-rows"></div>
+      <p class="hint" style="margin-top:10px;line-height:1.55">
+        每段选类别（前戏 / 口交 / 性交姿势）+ 动作 + 秒数。≥3 段时自动生成 beat timeline、过渡句与防跳切穿帮约束，并并入右侧最终提示词。
+      </p>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="actions" style="margin-bottom:12px">
+          <button type="button" class="btn warn" id="btnRandom">🎲 随机组合</button>
+          <button type="button" class="btn ghost" id="btnClear">清空积木</button>
+        </div>
+        <div class="modules" id="modules"></div>
+      </div>
+
+      <aside class="preview">
+        <div class="panel">
+          <h3>实时预览</h3>
+          <p class="hint" id="metaLine" style="margin-bottom:10px"></p>
+          <div id="refSlotHost"></div>
+          <label for="outPrompt">最终提示词（含时间轴衔接优化）</label>
+          <textarea id="outPrompt" spellcheck="false"></textarea>
+          <label for="outNeg" style="margin-top:10px">负面提示词 / 排除项</label>
+          <textarea id="outNeg" style="min-height:100px" spellcheck="false"></textarea>
+          <div class="actions" style="margin-top:12px">
+            <button type="button" class="btn primary" id="btnCopy">复制提示词</button>
+            <button type="button" class="btn secondary" id="btnCopyNeg">复制负面</button>
+            <button type="button" class="btn" id="btnJson">导出 JSON</button>
+            <button type="button" class="btn" id="btnTxt">导出 TXT</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>使用提示</h3>
+          <p class="hint" style="line-height:1.6;margin:0">
+            1) 选模型与模式 → 2) 勾选积木 → 3) 在时间轴添加 ≥3 段动作并选剪辑策略 → 4) 复制右侧 prompt<br/>
+            <strong>一镜到底</strong>：morph / continuous take，禁止硬切。<br/>
+            <strong>多镜头</strong>：match cut / raccord，匹配视线与动作惯性。<br/>
+            I2V：外貌靠参考图；Multi-ref：按槽位上传。本地 H3 / 允许成人内容的部署更稳妥。
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="note">
+      本地单页工具 · 零构建依赖 · 仅生成提示词模板 · 不生成或托管色情媒体文件<br/>
+      打开方式：双击 index.html，或 <code>cd /workspace/nsfw-sex-prompt-skill && python3 -m http.server 8765</code>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

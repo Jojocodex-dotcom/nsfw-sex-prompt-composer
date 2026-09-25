@@ -1,0 +1,2 @@
+# Pure-logic nodes: no heavy ML deps required.
+# Optional: install transformers / llama-cpp-python separately if you wire an LLM expand step.

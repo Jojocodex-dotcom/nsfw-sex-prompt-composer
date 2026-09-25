@@ -4,6 +4,50 @@
   if (!D) { document.body.innerHTML = "<p>data.js 未加载</p>"; return; }
 
   const DURATIONS = (D.meta.durationPresets || [3, 5, 8, 10, 15]).slice();
+  const H3_MAX = Number(D.meta.h3MaxSeconds) || 15;
+
+  function maxSegSeconds() {
+    // Both models: a beat longer than 15s is useless for H3; keep UI capped at 15 always.
+    return H3_MAX;
+  }
+
+  function clampSeconds(n) {
+    return Math.max(1, Math.min(maxSegSeconds(), Number(n) || 5));
+  }
+
+  /** Pack timeline into H3 jobs each totaling ≤ H3_MAX seconds. */
+  function packH3Jobs(segs) {
+    const jobs = [];
+    let cur = [];
+    let used = 0;
+    segs.forEach((s) => {
+      const sec = clampSeconds(s.seconds);
+      const item = { ...s, seconds: sec };
+      if (cur.length && used + sec > H3_MAX) {
+        jobs.push({ beats: cur, total: used });
+        cur = [];
+        used = 0;
+      }
+      // single beat longer than max already clamped
+      if (sec > H3_MAX) {
+        // unreachable after clamp
+      }
+      if (!cur.length && sec <= H3_MAX) {
+        cur = [item];
+        used = sec;
+      } else if (used + sec <= H3_MAX) {
+        cur.push(item);
+        used += sec;
+      } else {
+        jobs.push({ beats: cur, total: used });
+        cur = [item];
+        used = sec;
+      }
+    });
+    if (cur.length) jobs.push({ beats: cur, total: used });
+    return jobs;
+  }
+
   const ACTION_CATS = [
     { key: "foreplay", title: "前戏", data: D.foreplay },
     { key: "oral", title: "口交/口部", data: D.oral },
@@ -165,19 +209,64 @@
     const modeLabelEn = state.editMode === "continuous" ? "ONE CONTINUOUS TAKE" : "MULTI-SHOT EDIT";
     const modeLabelZh = state.editMode === "continuous" ? "一镜到底" : "多镜头剪辑";
 
-    const en =
+    let en =
       `Action timeline (${modeLabelEn}, total ~${total}s, ${segs.length} beats):\n` +
       beatsEn.join("\n") +
       (transitionsEn.length ? "\nTransitions:\n" + transitionsEn.join("\n") : "") +
       "\n" +
       constraintsEn;
 
-    const zh =
+    let zh =
       `动作时间轴（${modeLabelZh}，合计约 ${total} 秒，${segs.length} 段）：\n` +
       beatsZh.join("\n") +
       (transitionsZh.length ? "\n过渡衔接：\n" + transitionsZh.join("\n") : "") +
       "\n" +
       constraintsZh;
+
+    // MINIMAX H3: one generation ≈ max 15s — emit explicit job packs when over.
+    if (state.model === "minimax_h3") {
+      const jobs = packH3Jobs(segs);
+      const packEn = [];
+      const packZh = [];
+      packEn.push(
+        `MINIMAX H3 LIMIT: each generation is at most ~${H3_MAX}s. ` +
+          (jobs.length === 1
+            ? `This timeline fits in ONE job (${jobs[0].total}s).`
+            : `Split into ${jobs.length} separate generations (do NOT expect one ${total}s clip).`)
+      );
+      packZh.push(
+        `MINIMAX H3 限制：单次生成约 ≤${H3_MAX} 秒。` +
+          (jobs.length === 1
+            ? `本时间轴可在【一条】任务内完成（${jobs[0].total}s）。`
+            : `已超过单次上限，请拆成 ${jobs.length} 条分别生成（不要指望一次出 ${total}s）。`)
+      );
+      jobs.forEach((job, ji) => {
+        let jt = 0;
+        const linesEn = [];
+        const linesZh = [];
+        job.beats.forEach((b, bi) => {
+          const a = jt;
+          const e = jt + b.seconds;
+          jt = e;
+          linesEn.push(`  - JobBeat ${bi + 1} [${a}–${e}s]: ${b.en}`);
+          linesZh.push(`  - 任务节拍${bi + 1}【${a}–${e}秒】：${b.zh || b.label}`);
+        });
+        packEn.push(
+          `H3 JOB ${ji + 1}/${jobs.length} (generate ${job.total}s` +
+            (ji > 0 ? "; I2V start from last frame of previous job" : "; I2V from your first frame") +
+            "):\n" +
+            linesEn.join("\n")
+        );
+        packZh.push(
+          `H3 任务 ${ji + 1}/${jobs.length}（生成 ${job.total} 秒` +
+            (ji > 0 ? "；用上一条最后一帧做本条首帧 I2V" : "；用你的首帧/参考图做 I2V") +
+            "）：\n" +
+            linesZh.join("\n")
+        );
+      });
+      en = packEn.join("\n") + "\n\n" + en;
+      zh = packZh.join("\n") + "\n\n" + zh;
+    }
 
     if (lang === "en") return { en, zh: "" };
     if (lang === "zh") return { en: "", zh };
@@ -437,7 +526,27 @@
     const host = $("#timelineRows");
     const segs = state.timeline;
     const total = totalSeconds(segs);
-    $("#tlTotal").textContent = `总时长 ${total}s · ${segs.length} 段`;
+    const jobs = packH3Jobs(segs.map((s) => ({ ...s, seconds: clampSeconds(s.seconds) })));
+    const over = state.model === "minimax_h3" && total > H3_MAX;
+    const elTotal = $("#tlTotal");
+    elTotal.textContent = over
+      ? `总时长 ${total}s · ${segs.length} 段 → 拆成 ${jobs.length} 条 H3 任务（每条 ≤${H3_MAX}s）`
+      : `总时长 ${total}s · ${segs.length} 段` + (state.model === "minimax_h3" ? `（H3 单次上限 ${H3_MAX}s）` : "");
+    elTotal.classList.toggle("tl-total-over", over);
+    const warn = $("#tlWarn");
+    if (warn) {
+      if (state.model === "minimax_h3" && total > H3_MAX) {
+        warn.hidden = false;
+        warn.textContent =
+          `MINIMAX H3 单次只能生成约 ${H3_MAX} 秒，不能一次出 ${total}s。已按时间轴拆成 ${jobs.length} 条各自 ≤${H3_MAX}s 的提示词任务；请逐条生成并用上一段最后一帧做下一条 I2V 首帧。`;
+      } else if (state.model === "minimax_h3") {
+        warn.hidden = false;
+        warn.textContent = `当前模型 MINIMAX H3：单次生成请把时间轴总和压在 ${H3_MAX}s 以内（常见 5 / 10 / 15s）。更长剧情请拆多条。`;
+      } else {
+        warn.hidden = true;
+        warn.textContent = "";
+      }
+    }
 
     if (!segs.length) {
       host.innerHTML = `<div class="tl-empty">尚未添加动作段。点击「添加动作段」或「从已选积木填充」。建议 ≥3 段以生成完整衔接提示。</div>`;
@@ -460,7 +569,7 @@
         <select data-field="category" title="类别">${catOpts}</select>
         <select data-field="actionId" title="动作">${actionOptionsHtml(seg.category, seg.actionId)}</select>
         <select data-field="seconds" title="秒数">${durOpts}</select>
-        <input type="number" min="1" max="60" step="1" data-field="secondsNum" value="${seg.seconds}" title="自定义秒" />
+        <input type="number" min="1" max="15" step="1" data-field="secondsNum" value="${seg.seconds}" title="自定义秒" />
         <button type="button" class="btn-icon" data-act="del" title="删除">×</button>`;
       host.appendChild(row);
     });
@@ -479,9 +588,9 @@
           } else if (field === "actionId") {
             seg.actionId = el.value;
           } else if (field === "seconds") {
-            seg.seconds = Number(el.value);
+            seg.seconds = clampSeconds(el.value);
           } else if (field === "secondsNum") {
-            seg.seconds = Math.max(1, Math.min(60, Number(el.value) || 5));
+            seg.seconds = clampSeconds(el.value);
           }
           renderTimeline();
           refreshPreview();
@@ -500,7 +609,7 @@
     const cat = (preset && preset.category) || "sexPoses";
     const catObj = ACTION_CATS.find((c) => c.key === cat) || ACTION_CATS[2];
     const actionId = (preset && preset.actionId) || catObj.data[0].id;
-    const seconds = (preset && preset.seconds) || 5;
+    const seconds = clampSeconds((preset && preset.seconds) || 5);
     state.timeline.push({ id: segSeq++, category: catObj.key, actionId, seconds });
     renderTimeline();
     refreshPreview();
@@ -509,14 +618,14 @@
   function seedTimelineFromSelection() {
     const picks = [];
     ["foreplay", "oral", "sexPoses"].forEach((k) => {
-      state.selected[k].forEach((id) => picks.push({ category: k, actionId: id, seconds: k === "sexPoses" ? 8 : 5 }));
+      state.selected[k].forEach((id) => picks.push({ category: k, actionId: id, seconds: k === "sexPoses" ? 7 : 4 }));
     });
     if (picks.length < 3) {
       // pad with defaults so user gets ≥3
       const defaults = [
         { category: "foreplay", actionId: "kiss_deep", seconds: 3 },
         { category: "oral", actionId: "bj_kneel", seconds: 5 },
-        { category: "sexPoses", actionId: "missionary", seconds: 8 }
+        { category: "sexPoses", actionId: "missionary", seconds: 7 }
       ];
       defaults.forEach((d) => {
         if (!picks.some((p) => p.category === d.category && p.actionId === d.actionId)) picks.push(d);
@@ -719,7 +828,7 @@
     state.timeline = [
       { id: segSeq++, category: "foreplay", actionId: "kiss_deep", seconds: 3 },
       { id: segSeq++, category: "oral", actionId: "bj_kneel", seconds: 5 },
-      { id: segSeq++, category: "sexPoses", actionId: "missionary", seconds: 8 }
+      { id: segSeq++, category: "sexPoses", actionId: "missionary", seconds: 7 }
     ];
     renderModules();
     renderTimeline();

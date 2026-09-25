@@ -6,10 +6,10 @@
 window.PROMPT_DATA = {
   meta: {
     title: "性爱视频提示词组合器",
-    version: "1.1.0",
+    version: "1.2.0",
     ageGate: "21+ ONLY — 双方均为自愿成年人的虚构成人内容。禁止未成年、年龄模糊、真实人物姓名/肖像。",
     models: [
-      { id: "minimax_h3", label: "MINIMAX H3（Hailuo/海螺类）", hint: "偏运动、运镜、声景；I2V 少写外貌" },
+      { id: "minimax_h3", label: "MINIMAX H3（Hailuo/海螺类）", hint: "单次生成最长约 15s；偏运动/运镜/声景；I2V 少写外貌" },
       { id: "qwen_image", label: "QWEN IMAGE 2.1", hint: "偏详细姿势/场景描写；适合定帧再 I2V" }
     ],
     modes: [
@@ -20,7 +20,9 @@ window.PROMPT_DATA = {
       { id: "continuous", label: "一镜到底", hint: "单一连续镜头；动作之间用 morph/transition 衔接，保持身份、接触点、运镜平滑" },
       { id: "multicut", label: "多镜头", hint: "每段一个镜头；段间用 cut / match cut / raccord（匹配视线、动作惯性、出入画）" }
     ],
-    durationPresets: [3, 5, 8, 10, 15]
+    durationPresets: [3, 5, 8, 10, 15],
+    h3MaxSeconds: 15,
+    h3Note: "MINIMAX H3 单次片段上限约 15 秒。时间轴总长超过 15s 时，会自动拆成多条各自 ≤15s 的生成任务（用上一段末帧衔接），而不是指望一次出 20–30s。"
   },
 
   /* —— 主体组合 —— */

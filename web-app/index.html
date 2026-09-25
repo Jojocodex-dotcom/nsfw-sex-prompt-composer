@@ -69,9 +69,10 @@
         </div>
       </div>
       <div id="timelineRows" class="timeline-rows"></div>
-      <p class="hint" style="margin-top:10px;line-height:1.55">
-        每段选类别（前戏 / 口交 / 性交姿势）+ 动作 + 秒数。≥3 段时自动生成 beat timeline、过渡句与防跳切穿帮约束，并并入右侧最终提示词。
+      <p class="hint" style="margin-top:10px;line-height:1.55" id="tlHint">
+        每段选类别 + 动作 + 秒数（单段最长 15s）。<strong>MINIMAX H3 单次生成总长也不得超过约 15s</strong>；超过会自动拆成多条 ≤15s 任务。≥2 段即可生成衔接提示。
       </p>
+      <p class="tl-warn" id="tlWarn" hidden></p>
     </div>
 
     <div class="layout">

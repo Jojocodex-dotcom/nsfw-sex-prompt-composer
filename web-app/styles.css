@@ -233,3 +233,18 @@ footer.note {
   }
   .tl-row .idx { grid-row: span 2; }
 }
+
+.tl-warn {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #3a1f14;
+  border: 1px solid #c45c2a;
+  color: #ffd2b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tl-total-over {
+  color: #ff9a6b !important;
+  font-weight: 700;
+}

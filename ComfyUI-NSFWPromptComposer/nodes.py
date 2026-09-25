@@ -15,10 +15,10 @@ _PARENT_DATA = os.path.normpath(os.path.join(_DIR, "..", "prompt_data.json"))
 
 AGE_LINE_EN = (
     "All characters are clearly consenting adults aged 21 or older. "
-    "Fictional adult content only. No minors, no age ambiguity, no real celebrities."
+    "Fictional adult content only (CNC/dark fantasy between adults 21+ allowed). No minors, no age ambiguity, no real celebrities."
 )
 AGE_LINE_ZH = (
-    "所有角色均为明显自愿的21岁及以上成年人。仅虚构成人内容。无未成年、无年龄模糊、无真实名人。"
+    "所有角色均为明显自愿的21岁及以上成年人。仅虚构成人内容（允许成人间CNC/暗黑幻想）。无未成年、无年龄模糊、无真实名人。"
 )
 
 
@@ -104,7 +104,7 @@ NSFW_LM_MODELS: List[Dict[str, Any]] = [
 
 def _index_items() -> Dict[str, Dict[str, Dict[str, Any]]]:
     out: Dict[str, Dict[str, Dict[str, Any]]] = {}
-    for key in ("foreplay", "oral", "sexPoses", "subjects", "scenes", "rhythm", "cameras", "expressions", "wardrobe", "arcs", "bodyTags", "dialogueSnippets"):
+    for key in ("foreplay", "oral", "sexPoses", "darkActs", "subjects", "scenes", "rhythm", "cameras", "expressions", "wardrobe", "arcs", "bodyTags", "dialogueSnippets"):
         out[key] = {it["id"]: it for it in PROMPT_DATA.get(key, [])}
     return out
 

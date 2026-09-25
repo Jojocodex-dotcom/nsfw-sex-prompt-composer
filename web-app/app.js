@@ -51,7 +51,8 @@
   const ACTION_CATS = [
     { key: "foreplay", title: "前戏", data: D.foreplay },
     { key: "oral", title: "口交/口部", data: D.oral },
-    { key: "sexPoses", title: "性交姿势", data: D.sexPoses }
+    { key: "sexPoses", title: "性交姿势", data: D.sexPoses },
+    { key: "darkActs", title: "重口味·强制/CNC", data: D.darkActs || [] }
   ];
 
   let segSeq = 1;
@@ -60,6 +61,8 @@
     mode: "i2v",
     lang: "both",
     editMode: "continuous",
+    aiPolish: false,
+    polishedText: "",
     timeline: [],
     selected: {
       subjects: [],
@@ -68,6 +71,7 @@
       foreplay: [],
       oral: [],
       sexPoses: [],
+      darkActs: [],
       rhythm: [],
       cameras: [],
       expressions: [],
@@ -85,6 +89,7 @@
     { key: "foreplay", title: "前戏", data: D.foreplay, single: false },
     { key: "oral", title: "口交 / 口部", data: D.oral, single: false },
     { key: "sexPoses", title: "性交姿势大全", data: D.sexPoses, single: false },
+    { key: "darkActs", title: "重口味·强制/非自愿幻想(21+虚构)", data: D.darkActs || [], single: false, dark: true },
     { key: "rhythm", title: "节奏与强度", data: D.rhythm, single: true },
     { key: "cameras", title: "镜头语言", data: D.cameras, single: false },
     { key: "expressions", title: "表情与声音暗示", data: D.expressions, single: false },
@@ -294,6 +299,156 @@
     return list.join(", ");
   }
 
+  /** Build shared header context (age, subjects, scene, locks) without full timeline dump. */
+  function buildContextParts() {
+    const s = state.selected;
+    const get = (key) => {
+      const mod = MODULES.find((m) => m.key === key);
+      return mod ? pick(mod.data, s[key] || []) : [];
+    };
+    const subjects = get("subjects");
+    const body = get("bodyTags");
+    const scenes = get("scenes");
+    const ward = get("wardrobe");
+    const arcs = get("arcs");
+    const rhythm = get("rhythm");
+    const cams = get("cameras");
+    const exprs = get("expressions");
+    const dial = get("dialogueSnippets");
+
+    const ageLine =
+      "All characters are clearly adults aged 21 or older. Fictional adult content only (CNC/dark fantasy allowed between adults). No minors, no age ambiguity.";
+    const ageLineZh =
+      "所有角色均为明显21岁及以上成年人。仅虚构成人内容（允许成人间 CNC/暗黑幻想）。无未成年、无年龄模糊。";
+
+    const locks =
+      state.mode === "i2v"
+        ? { en: D.consistencyLocks.i2v, zh: D.consistencyLocks.i2v_zh }
+        : { en: D.consistencyLocks.multiref, zh: D.consistencyLocks.multiref_zh };
+
+    const partsEn = [ageLine];
+    const partsZh = [ageLineZh];
+    if (state.model === "minimax_h3") {
+      partsEn.push("Style: photorealistic cinematic adult intimacy/dark fantasy, natural skin, continuous camera.");
+    } else {
+      partsEn.push("Detailed adult pose and scene illustration, photorealistic, precise limb placement and contact surfaces.");
+    }
+    if (state.mode === "i2v") {
+      partsEn.push("IMAGE-TO-VIDEO: " + locks.en);
+      partsZh.push("图文生视频：" + locks.zh);
+      partsEn.push("Do not restate facial appearance; drive motion from the input frame.");
+    } else {
+      partsEn.push("MULTI-REFERENCE: " + locks.en);
+      partsZh.push("多参考：" + locks.zh);
+    }
+    if (subjects.length) {
+      partsEn.push("Subjects: " + frag(subjects, "en") + (body.length ? "; body: " + frag(body, "en") : ""));
+      partsZh.push("主体：" + frag(subjects, "zh") + (body.length ? "；体型：" + frag(body, "zh") : ""));
+    }
+    if (scenes.length) {
+      partsEn.push("Scene: " + frag(scenes, "en"));
+      partsZh.push("场景：" + frag(scenes, "zh"));
+    }
+    if (ward.length) {
+      partsEn.push("Wardrobe/props: " + frag(ward, "en"));
+      partsZh.push("服装道具：" + frag(ward, "zh"));
+    }
+    if (arcs.length) {
+      partsEn.push("Arc: " + frag(arcs, "en"));
+      partsZh.push("叙事弧：" + frag(arcs, "zh"));
+    }
+    if (rhythm.length) {
+      partsEn.push("Rhythm: " + frag(rhythm, "en"));
+      partsZh.push("节奏：" + frag(rhythm, "zh"));
+    }
+    if (cams.length) {
+      partsEn.push("Camera: " + frag(cams, "en") + ". Prefer one primary camera move; smooth continuous motion.");
+      partsZh.push("镜头：" + frag(cams, "zh") + "。优先一个主运镜。");
+    }
+    if (exprs.length) {
+      partsEn.push("Expression/sound cues: " + frag(exprs, "en"));
+      partsZh.push("表情声音：" + frag(exprs, "zh"));
+    }
+    if (dial.length) {
+      partsEn.push("Optional short dialogue: " + dial.map((d) => d.en).join(" "));
+      partsZh.push("可选对白：" + dial.map((d) => d.zh).join(" / "));
+    }
+    if (state.model === "minimax_h3") {
+      partsEn.push(
+        "Soundscape: close intimate/dark room tone; wet skin contact; breath, muffled cries or moans synced to motion; fabric/restraint rustle. non_diegetic_music: N/A or very low pulse."
+      );
+      partsZh.push("声景：私密/暗黑室内底噪；肌肤接触；与动作同步的喘息/闷叫/轻吟；布料或束缚摩擦。无或极低非叙音乐。");
+    }
+    return { partsEn, partsZh };
+  }
+
+  /** Per-job ≤15s prompts for H3 chaining (also works as single job). */
+  function buildH3JobPrompts() {
+    const segs = resolveSegments();
+    const ctx = buildContextParts();
+    const editLabelEn = state.editMode === "continuous" ? "ONE CONTINUOUS TAKE" : "MULTI-SHOT EDIT";
+    const editLabelZh = state.editMode === "continuous" ? "一镜到底" : "多镜头剪辑";
+    const jobs = segs.length ? packH3Jobs(segs) : [{ beats: [], total: 0 }];
+    const lang = state.lang;
+
+    return jobs.map((job, ji) => {
+      const linesEn = [];
+      const linesZh = [];
+      let jt = 0;
+      job.beats.forEach((b, bi) => {
+        const a = jt;
+        const e = jt + b.seconds;
+        jt = e;
+        linesEn.push(`[JobBeat ${bi + 1} | ${a}–${e}s] ${b.en}`);
+        linesZh.push(`【任务节拍${bi + 1}｜${a}–${e}秒】${b.zh || b.label}`);
+      });
+      const chainEn =
+        ji === 0
+          ? "I2V from your first frame / reference image."
+          : "I2V start from the LAST FRAME of the previous H3 job — preserve identity, wardrobe state, contact points, lighting.";
+      const chainZh =
+        ji === 0
+          ? "用你的首帧/参考图做 I2V。"
+          : "用【上一条 H3 任务最后一帧】做本条首帧 I2V——保持身份、服装状态、接触点、光照。";
+
+      const headEn = [
+        `MINIMAX H3 JOB ${ji + 1}/${jobs.length} — generate exactly ~${job.total || 0}s (≤${H3_MAX}s). ${chainEn}`,
+        `Edit: ${editLabelEn}.`
+      ];
+      const headZh = [
+        `MINIMAX H3 任务 ${ji + 1}/${jobs.length} — 生成约 ${job.total || 0} 秒（≤${H3_MAX}s）。${chainZh}`,
+        `剪辑：${editLabelZh}。`
+      ];
+
+      let bodyEn = headEn.concat(ctx.partsEn);
+      let bodyZh = headZh.concat(ctx.partsZh);
+      if (linesEn.length) {
+        bodyEn.push("Action timeline for THIS job only:\n" + linesEn.join("\n"));
+        bodyZh.push("本条任务动作时间轴：\n" + linesZh.join("\n"));
+        if (state.editMode === "continuous") {
+          bodyEn.push("CONTINUOUS-TAKE: soft morph between beats inside this job; no hard cut; no identity drift.");
+          bodyZh.push("一镜到底：本条内节拍柔和 morph；禁止硬切；禁止身份漂移。");
+        } else {
+          bodyEn.push("MULTI-SHOT: match cut / raccord between beats inside this job; preserve adult identities.");
+          bodyZh.push("多镜头：本条内 match cut / raccord；跨镜锁定成人身份。");
+        }
+      }
+
+      let text = "";
+      if (lang === "en") text = bodyEn.join("\n\n");
+      else if (lang === "zh") text = bodyZh.join("\n\n");
+      else text = "【EN】\n" + bodyEn.join("\n\n") + "\n\n【ZH】\n" + bodyZh.join("\n\n");
+
+      return {
+        index: ji + 1,
+        totalJobs: jobs.length,
+        seconds: job.total || 0,
+        beats: job.beats,
+        text
+      };
+    });
+  }
+
   function buildPrompt() {
     const s = state.selected;
     const get = (key) => pick(MODULES.find((m) => m.key === key).data, s[key]);
@@ -304,6 +459,7 @@
     const foreplay = get("foreplay");
     const oral = get("oral");
     const poses = get("sexPoses");
+    const darkActs = get("darkActs");
     const rhythm = get("rhythm");
     const cams = get("cameras");
     const exprs = get("expressions");
@@ -312,8 +468,8 @@
     const arcs = get("arcs");
 
     const ageLine =
-      "All characters are clearly consenting adults aged 21 or older. Fictional adult content only. No minors, no age ambiguity.";
-    const ageLineZh = "所有角色均为明显自愿的21岁及以上成年人。仅虚构成人内容。无未成年、无年龄模糊。";
+      "All characters are clearly adults aged 21 or older. Fictional adult content only (CNC/dark fantasy allowed between adults). No minors, no age ambiguity.";
+    const ageLineZh = "所有角色均为明显21岁及以上成年人。仅虚构成人内容（允许成人间 CNC/暗黑幻想）。无未成年、无年龄模糊。";
 
     const locks =
       state.mode === "i2v"
@@ -324,10 +480,10 @@
     const tlSegs = resolveSegments();
     const actionEn = tlSegs.length
       ? tlSegs.map((x) => x.en).join(". Then ")
-      : [frag(foreplay, "en"), frag(oral, "en"), frag(poses, "en")].filter(Boolean).join(". Then ");
+      : [frag(foreplay, "en"), frag(oral, "en"), frag(poses, "en"), frag(darkActs, "en")].filter(Boolean).join(". Then ");
     const actionZh = tlSegs.length
       ? tlSegs.map((x) => x.zh || x.label).join("。随后 ")
-      : [frag(foreplay, "zh"), frag(oral, "zh"), frag(poses, "zh")].filter(Boolean).join("。随后 ");
+      : [frag(foreplay, "zh"), frag(oral, "zh"), frag(poses, "zh"), frag(darkActs, "zh")].filter(Boolean).join("。随后 ");
 
     const partsEn = [];
     const partsZh = [];
@@ -475,7 +631,7 @@
     MODULES.forEach((mod, idx) => {
       const selectedCount = state.selected[mod.key].length;
       const el = document.createElement("section");
-      el.className = "mod" + (idx < 4 ? " open" : "");
+      el.className = "mod" + (idx < 4 || mod.key === "darkActs" ? " open" : "") + (mod.dark ? " mod-dark" : "");
       el.dataset.key = mod.key;
       el.innerHTML = `
         <div class="mod-head">
@@ -617,8 +773,12 @@
 
   function seedTimelineFromSelection() {
     const picks = [];
-    ["foreplay", "oral", "sexPoses"].forEach((k) => {
-      state.selected[k].forEach((id) => picks.push({ category: k, actionId: id, seconds: k === "sexPoses" ? 7 : 4 }));
+    ["foreplay", "oral", "sexPoses", "darkActs"].forEach((k) => {
+      (state.selected[k] || []).forEach((id) => picks.push({
+        category: k,
+        actionId: id,
+        seconds: k === "sexPoses" ? 7 : k === "darkActs" ? 5 : 4
+      }));
     });
     if (picks.length < 3) {
       // pad with defaults so user gets ≥3
@@ -636,12 +796,73 @@
     toast("已从积木填充 " + state.timeline.length + " 段");
   }
 
+  function renderJobCards() {
+    const host = $("#jobPromptsHost");
+    if (!host) return;
+    const jobs = buildH3JobPrompts();
+    if (!state.timeline.length) {
+      host.innerHTML = "";
+      return;
+    }
+    host.innerHTML =
+      `<div class="job-head"><strong>H3 分条提示词</strong><span class="count">${jobs.length} 条 · 各 ≤${H3_MAX}s</span></div>` +
+      jobs
+        .map(
+          (j, idx) => `
+      <div class="job-card" data-job="${idx}">
+        <div class="job-card-head">
+          <span>JOB ${j.index}/${j.totalJobs} · ${j.seconds}s</span>
+          <button type="button" class="btn ghost btn-xs" data-copy-job="${idx}">复制本条</button>
+        </div>
+        <textarea readonly class="job-ta" spellcheck="false">${escapeHtml(j.text)}</textarea>
+      </div>`
+        )
+        .join("");
+    host.querySelectorAll("[data-copy-job]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const i = Number(btn.dataset.copyJob);
+        const t = jobs[i] && jobs[i].text;
+        if (!t) return;
+        try {
+          await navigator.clipboard.writeText(t);
+          toast("已复制 JOB " + (i + 1));
+        } catch {
+          toast("复制失败，请手动全选");
+        }
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function syncPolishUi() {
+    const wrap = $("#polishWrap");
+    const chk = $("#chkAiPolish");
+    if (chk) chk.checked = !!state.aiPolish;
+    if (wrap) wrap.hidden = !state.aiPolish;
+    const btnCopy = $("#btnCopy");
+    const btnCopyRaw = $("#btnCopyRaw");
+    if (btnCopy) btnCopy.textContent = state.aiPolish ? "复制润色版" : "复制提示词";
+    if (btnCopyRaw) btnCopyRaw.hidden = !state.aiPolish;
+    const outPol = $("#outPolished");
+    if (outPol) outPol.value = state.polishedText || "";
+  }
+
   function refreshPreview() {
-    $("#outPrompt").value = buildPrompt();
+    const direct = buildPrompt();
+    $("#outPrompt").value = direct;
     $("#outNeg").value = buildNegative();
     const slotHost = $("#refSlotHost");
-    slotHost.innerHTML = buildRefSlotsHtml();
+    if (slotHost) slotHost.innerHTML = buildRefSlotsHtml();
+    renderJobCards();
+    syncPolishUi();
     const editLabel = (D.meta.editModes || []).find((m) => m.id === state.editMode);
+    const jobs = state.timeline.length ? packH3Jobs(resolveSegments()) : [];
     $("#metaLine").textContent =
       D.meta.models.find((m) => m.id === state.model).label +
       " · " +
@@ -650,7 +871,11 @@
       (editLabel ? editLabel.label : state.editMode) +
       " · 输出：" +
       ({ en: "英文", zh: "中文", both: "中英双语" }[state.lang]) +
-      (state.timeline.length ? ` · 时间轴 ${state.timeline.length} 段 / ${totalSeconds(state.timeline)}s` : "");
+      (state.timeline.length
+        ? ` · 时间轴 ${state.timeline.length} 段 / ${totalSeconds(state.timeline)}s` +
+          (state.model === "minimax_h3" && jobs.length ? ` · H3×${jobs.length}` : "")
+        : "") +
+      (state.aiPolish ? " · AI润色ON" : " · 直接组装");
   }
 
   function clearAll() {
@@ -672,6 +897,9 @@
     state.selected.foreplay = pickSome(D.foreplay, 1 + (Math.random() > 0.5));
     state.selected.oral = Math.random() > 0.4 ? pickSome(D.oral, 1) : [];
     state.selected.sexPoses = pickSome(D.sexPoses, 1 + (Math.random() > 0.5));
+    state.selected.darkActs = Math.random() > 0.75 && (D.darkActs || []).length
+      ? pickSome(D.darkActs, 2)
+      : [];
     state.selected.rhythm = [pickOne(D.rhythm)];
     state.selected.cameras = pickSome(D.cameras, 1 + (Math.random() > 0.6));
     state.selected.expressions = pickSome(D.expressions, 2);
@@ -685,17 +913,300 @@
   }
 
   async function copyText(which) {
-    const text = which === "neg" ? $("#outNeg").value : $("#outPrompt").value;
+    let el;
+    if (which === "neg") el = $("#outNeg");
+    else if (which === "raw") el = $("#outPrompt");
+    else if (which === "polish") el = $("#outPolished");
+    else el = state.aiPolish && $("#outPolished") && $("#outPolished").value.trim()
+      ? $("#outPolished")
+      : $("#outPrompt");
+    const text = el ? el.value : "";
     try {
       await navigator.clipboard.writeText(text);
-      toast("已复制到剪贴板");
+      toast(which === "neg" ? "已复制负面" : which === "raw" ? "已复制原文" : state.aiPolish && which !== "raw" ? "已复制润色版" : "已复制到剪贴板");
     } catch {
-      const ta = which === "neg" ? $("#outNeg") : $("#outPrompt");
-      ta.select();
-      document.execCommand("copy");
+      if (el) {
+        el.select();
+        document.execCommand("copy");
+      }
       toast("已复制");
     }
   }
+
+  async function runAiPolish() {
+    const Dir = window.NSFWDirector;
+    if (!Dir) {
+      toast("director.js 未加载");
+      return;
+    }
+    const cfg = Dir.loadSettings();
+    if (!cfg.apiKey) {
+      toast("未配置 API Key — 仍显示直接组装稿");
+      return;
+    }
+    const jobs = buildH3JobPrompts();
+    const system = Dir.buildPolishSystemPrompt();
+    const btn = $("#btnRunPolish");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "润色中…";
+    }
+    try {
+      const polishedParts = [];
+      for (let i = 0; i < jobs.length; i++) {
+        const user =
+          "Polish the following H3 job prompt (" + (i + 1) + "/" + jobs.length + ", " + jobs[i].seconds + "s). Keep job boundary and all beats.\n\n" +
+          jobs[i].text;
+        const out = await Dir.callChatCompletions({
+          baseUrl: cfg.apiBase || "https://api.openai.com/v1",
+          apiKey: cfg.apiKey,
+          model: cfg.model || "gpt-4o-mini",
+          system,
+          user,
+          temperature: 0.35
+        });
+        polishedParts.push(
+          (jobs.length > 1 ? ("===== POLISHED JOB " + (i + 1) + "/" + jobs.length + " (" + jobs[i].seconds + "s) =====\n") : "") +
+            String(out).trim()
+        );
+      }
+      state.polishedText = polishedParts.join("\n\n");
+      syncPolishUi();
+      toast("AI 润色完成");
+    } catch (err) {
+      console.error(err);
+      toast("润色失败：保留原文 — " + (err && err.message ? err.message.slice(0, 80) : "error"));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "重新润色";
+      }
+    }
+  }
+
+  function applyDirectorPlan(plan) {
+    if (!plan || typeof plan !== "object") {
+      toast("编排无效");
+      return false;
+    }
+    if (plan.editMode === "continuous" || plan.editMode === "multicut") {
+      state.editMode = plan.editMode;
+      document.querySelectorAll("[data-edit]").forEach((b) =>
+        b.classList.toggle("active", b.dataset.edit === state.editMode)
+      );
+      const em = (D.meta.editModes || []).find((m) => m.id === state.editMode);
+      const eh = $("#editHint");
+      if (eh && em) eh.textContent = em.hint;
+      const dirEdit = document.querySelectorAll("[data-dir-edit]");
+      dirEdit.forEach((b) => b.classList.toggle("active", b.dataset.dirEdit === state.editMode));
+    }
+    if (plan.selected && typeof plan.selected === "object") {
+      Object.keys(state.selected).forEach((k) => {
+        if (Array.isArray(plan.selected[k])) state.selected[k] = plan.selected[k].slice();
+      });
+    }
+    if (Array.isArray(plan.timeline)) {
+      state.timeline = [];
+      plan.timeline.forEach((seg) => {
+        const cat = ACTION_CATS.find((c) => c.key === seg.category) || ACTION_CATS[0];
+        const aid = seg.actionId || seg.action_id || (cat.data[0] && cat.data[0].id);
+        if (!aid) return;
+        state.timeline.push({
+          id: segSeq++,
+          category: cat.key,
+          actionId: aid,
+          seconds: clampSeconds(seg.seconds || 5)
+        });
+      });
+    }
+    state.polishedText = "";
+    renderModules();
+    renderTimeline();
+    refreshPreview();
+    return true;
+  }
+
+  function showDirectorPreview(plan) {
+    const pre = $("#directorPreview");
+    if (!pre) return;
+    const jobs = plan.jobs || (window.NSFWDirector ? window.NSFWDirector.packBeats(plan.timeline || []) : []);
+    const summary = {
+      source: plan.source || "plan",
+      notes: plan.notes || "",
+      editMode: plan.editMode,
+      selected: plan.selected,
+      timeline: plan.timeline,
+      jobCount: jobs.length,
+      jobs: jobs.map((j, i) => ({
+        job: i + 1,
+        total: j.total,
+        beats: j.beats.map((b) => b.category + "/" + b.actionId + "@" + b.seconds + "s")
+      }))
+    };
+    pre.textContent = JSON.stringify(summary, null, 2);
+    window.__lastDirectorPlan = plan;
+  }
+
+  function bindDirector() {
+    const Dir = window.NSFWDirector;
+    if (!Dir) return;
+    const cfg = Dir.loadSettings();
+    const setVal = (id, v) => {
+      const el = $(id);
+      if (el && v != null) el.value = v;
+    };
+    setVal("#dirApiBase", cfg.apiBase || "https://api.openai.com/v1");
+    setVal("#dirApiKey", cfg.apiKey || "");
+    setVal("#dirModel", cfg.model || "gpt-4o-mini");
+    setVal("#dirTargetSec", cfg.targetSeconds || 45);
+    if (typeof cfg.aiPolish === "boolean") state.aiPolish = cfg.aiPolish;
+
+    document.querySelectorAll("[data-dir-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-dir-edit]").forEach((b) => b.classList.toggle("active", b === btn));
+      });
+    });
+
+    const persistApi = () => {
+      Dir.saveSettings({
+        apiBase: ($("#dirApiBase") && $("#dirApiBase").value.trim()) || "https://api.openai.com/v1",
+        apiKey: ($("#dirApiKey") && $("#dirApiKey").value) || "",
+        model: ($("#dirModel") && $("#dirModel").value.trim()) || "gpt-4o-mini",
+        targetSeconds: Number($("#dirTargetSec") && $("#dirTargetSec").value) || 45,
+        aiPolish: state.aiPolish
+      });
+    };
+    ["#dirApiBase", "#dirApiKey", "#dirModel", "#dirTargetSec"].forEach((sel) => {
+      const el = $(sel);
+      if (el) el.addEventListener("change", persistApi);
+    });
+
+    const getDirEdit = () => {
+      const active = document.querySelector("[data-dir-edit].active");
+      return (active && active.dataset.dirEdit) || state.editMode || "continuous";
+    };
+
+    const btnLocal = $("#btnDirLocal");
+    if (btnLocal) {
+      btnLocal.addEventListener("click", () => {
+        const chapter = ($("#dirChapter") && $("#dirChapter").value) || "";
+        if (!chapter.trim()) {
+          toast("请先粘贴情节/章节");
+          return;
+        }
+        const target = Number($("#dirTargetSec").value) || 45;
+        const plan = Dir.arrangeFromStory(chapter, target, getDirEdit());
+        showDirectorPreview(plan);
+        toast("本地编排完成 — 可点「应用编排到时间轴」");
+      });
+    }
+
+    const btnLlm = $("#btnDirLlm");
+    if (btnLlm) {
+      btnLlm.addEventListener("click", async () => {
+        persistApi();
+        const cfg2 = Dir.loadSettings();
+        if (!cfg2.apiKey) {
+          toast("未配置 API Key，改用本地编排");
+          $("#btnDirLocal").click();
+          return;
+        }
+        const chapter = ($("#dirChapter") && $("#dirChapter").value) || "";
+        if (!chapter.trim()) {
+          toast("请先粘贴情节/章节");
+          return;
+        }
+        const target = Number($("#dirTargetSec").value) || 45;
+        const editMode = getDirEdit();
+        btnLlm.disabled = true;
+        btnLlm.textContent = "编排中…";
+        try {
+          const content = await Dir.callChatCompletions({
+            baseUrl: cfg2.apiBase,
+            apiKey: cfg2.apiKey,
+            model: cfg2.model,
+            system: Dir.buildDirectorSystemPrompt(target, editMode),
+            user: Dir.buildDirectorUserPrompt(chapter, target, editMode),
+            temperature: 0.3
+          });
+          const parsed = Dir.extractJson(content);
+          if (!parsed) throw new Error("无法解析 JSON");
+          parsed.source = "llm";
+          parsed.jobs = Dir.packBeats(parsed.timeline || []);
+          parsed.notes = (parsed.notes || "") + "（大模型编排）";
+          showDirectorPreview(parsed);
+          toast("大模型编排完成");
+        } catch (err) {
+          console.error(err);
+          toast("LLM 失败，回退本地 — " + (err.message || "").slice(0, 60));
+          const plan = Dir.arrangeFromStory(chapter, target, editMode);
+          plan.notes += "（LLM 失败回退）";
+          showDirectorPreview(plan);
+        } finally {
+          btnLlm.disabled = false;
+          btnLlm.textContent = "用大模型优化编排";
+        }
+      });
+    }
+
+    const btnCopySys = $("#btnDirCopySys");
+    if (btnCopySys) {
+      btnCopySys.addEventListener("click", async () => {
+        const chapter = ($("#dirChapter") && $("#dirChapter").value) || "";
+        const target = Number($("#dirTargetSec").value) || 45;
+        const editMode = getDirEdit();
+        const blob =
+          "=== SYSTEM ===\n" +
+          Dir.buildDirectorSystemPrompt(target, editMode) +
+          "\n\n=== USER ===\n" +
+          Dir.buildDirectorUserPrompt(chapter, target, editMode);
+        try {
+          await navigator.clipboard.writeText(blob);
+          toast("已复制给外部 LLM 的系统+用户提示");
+        } catch {
+          toast("复制失败");
+        }
+      });
+    }
+
+    const btnApply = $("#btnDirApply");
+    if (btnApply) {
+      btnApply.addEventListener("click", () => {
+        const plan = window.__lastDirectorPlan;
+        if (!plan) {
+          toast("请先本地/LLM 编排");
+          return;
+        }
+        if (applyDirectorPlan(plan)) toast("已应用到时间轴与积木");
+      });
+    }
+
+    const btnPaste = $("#btnDirPasteJson");
+    if (btnPaste) {
+      btnPaste.addEventListener("click", () => {
+        const raw = ($("#dirJsonPaste") && $("#dirJsonPaste").value) || "";
+        const parsed = Dir.extractJson(raw);
+        if (!parsed) {
+          toast("JSON 无效");
+          return;
+        }
+        parsed.source = "paste";
+        parsed.jobs = Dir.packBeats(parsed.timeline || []);
+        showDirectorPreview(parsed);
+        if (applyDirectorPlan(parsed)) toast("已从 JSON 应用");
+      });
+    }
+
+    const apiToggle = $("#dirApiToggle");
+    const apiBody = $("#dirApiBody");
+    if (apiToggle && apiBody) {
+      apiToggle.addEventListener("click", () => {
+        apiBody.hidden = !apiBody.hidden;
+        apiToggle.textContent = apiBody.hidden ? "▸ API 设置（可选）" : "▾ API 设置（可选）";
+      });
+    }
+  }
+
 
   function exportFile(type) {
     const payload = {
@@ -710,6 +1221,9 @@
       selection: { ...state.selected },
       timeline: state.timeline.map((s) => ({ ...s })),
       timelinePrompt: buildTimelineBlock(state.lang),
+      h3Jobs: buildH3JobPrompts().map((j) => ({ index: j.index, seconds: j.seconds, text: j.text })),
+      aiPolish: state.aiPolish,
+      polished: state.polishedText || null,
       prompt: $("#outPrompt").value,
       negative: $("#outNeg").value,
       refSlots: state.mode === "multiref" ? D.refSlots : null
@@ -776,6 +1290,8 @@
       refreshPreview();
     });
     $("#btnCopy").addEventListener("click", () => copyText("prompt"));
+    const btnCopyRaw = $("#btnCopyRaw");
+    if (btnCopyRaw) btnCopyRaw.addEventListener("click", () => copyText("raw"));
     $("#btnCopyNeg").addEventListener("click", () => copyText("neg"));
     $("#btnClear").addEventListener("click", clearAll);
     $("#btnRandom").addEventListener("click", randomize);
@@ -792,11 +1308,29 @@
       refreshPreview();
       toast("时间轴已清空");
     });
+
+    const chk = $("#chkAiPolish");
+    if (chk) {
+      chk.addEventListener("change", () => {
+        state.aiPolish = !!chk.checked;
+        if (window.NSFWDirector) {
+          window.NSFWDirector.saveSettings({ aiPolish: state.aiPolish });
+        }
+        syncPolishUi();
+        refreshPreview();
+        if (state.aiPolish) runAiPolish();
+      });
+    }
+    const btnRunPolish = $("#btnRunPolish");
+    if (btnRunPolish) btnRunPolish.addEventListener("click", () => runAiPolish());
+
+    bindDirector();
   }
 
   function statsLine() {
     const c = {
       姿势: D.sexPoses.length,
+      重口: (D.darkActs || []).length,
       场景: D.scenes.length,
       前戏: D.foreplay.length,
       口交: D.oral.length,
@@ -833,8 +1367,26 @@
     ];
     renderModules();
     renderTimeline();
+    if (window.NSFWDirector) {
+      const cfg = window.NSFWDirector.loadSettings();
+      if (typeof cfg.aiPolish === "boolean") state.aiPolish = cfg.aiPolish;
+    }
     refreshPreview();
   }
+
+  window.NSFWApp = {
+    getState: () => state,
+    applyDirectorPlan,
+    buildPrompt,
+    buildH3JobPrompts,
+    buildNegative,
+    refreshPreview,
+    renderTimeline,
+    renderModules,
+    packH3Jobs,
+    ACTION_CATS,
+    H3_MAX
+  };
 
   document.addEventListener("DOMContentLoaded", init);
 })();

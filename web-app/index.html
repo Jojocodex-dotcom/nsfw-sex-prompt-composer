@@ -14,7 +14,7 @@
     <header class="hero">
       <div>
         <h1>性爱视频提示词组合器</h1>
-        <div class="sub">MINIMAX H3 / QWEN IMAGE 2.1 · 积木点选 · 动作时间轴 · I2V &amp; 多参考 · <span id="stats"></span></div>
+        <div class="sub">MINIMAX H3 / QWEN IMAGE 2.1 · 积木点选 · 动作时间轴 · 情节导演台 · I2V &amp; 多参考 · <span id="stats"></span></div>
       </div>
       <div class="lang-toggle">
         <label for="langSelect">输出语言</label>
@@ -45,6 +45,62 @@
       </div>
     </div>
 
+    <div class="panel director-panel" id="directorPanel">
+      <div class="timeline-head">
+        <h2>情节导演台 / Story Director</h2>
+        <span class="count">粘贴章节 → 编排 ≤15s H3 任务</span>
+      </div>
+      <p class="hint director-warn">
+        支持暗黑/CNC 成人幻想（强奸、轮奸、调教、迷奸等）——仅限 <strong>21+ 虚构</strong>。本地规则编排可不联网；大模型编排/润色需自备 API。
+      </p>
+      <label for="dirChapter">情节 / 章节原文</label>
+      <textarea id="dirChapter" rows="5" spellcheck="false" placeholder="示例：仓库里，三名成年男人围住一名成年女人……先撕开衣服压制挣扎，再轮流口交与进入；她又哭又喘，最后中出收场。全部角色明显21岁以上虚构 CNC。"></textarea>
+      <div class="director-controls">
+        <div>
+          <label for="dirTargetSec">目标总时长（秒）</label>
+          <input type="number" id="dirTargetSec" min="5" max="180" value="45" />
+        </div>
+        <div>
+          <h2 style="margin-bottom:8px">剪辑策略</h2>
+          <div class="seg" id="dirEditSeg">
+            <button type="button" class="active" data-dir-edit="continuous">一镜到底</button>
+            <button type="button" data-dir-edit="multicut">多镜头</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button type="button" class="btn primary" id="btnDirLocal">本地智能编排</button>
+        <button type="button" class="btn secondary" id="btnDirLlm">用大模型优化编排</button>
+        <button type="button" class="btn" id="btnDirCopySys">复制给 LLM 的系统提示</button>
+        <button type="button" class="btn warn" id="btnDirApply">应用编排到时间轴</button>
+      </div>
+      <button type="button" class="btn ghost dir-api-toggle" id="dirApiToggle">▸ API 设置（可选）</button>
+      <div id="dirApiBody" class="dir-api-body" hidden>
+        <div class="director-controls">
+          <div>
+            <label for="dirApiBase">API Base URL</label>
+            <input type="text" id="dirApiBase" placeholder="https://api.openai.com/v1" />
+          </div>
+          <div>
+            <label for="dirApiKey">API Key（仅存 localStorage）</label>
+            <input type="password" id="dirApiKey" placeholder="sk-..." autocomplete="off" />
+          </div>
+          <div>
+            <label for="dirModel">模型名</label>
+            <input type="text" id="dirModel" placeholder="gpt-4o-mini" />
+          </div>
+        </div>
+        <p class="hint">OpenAI 兼容接口（含中转）。Key 只保存在本机浏览器，不上传到本工具服务器。</p>
+      </div>
+      <label for="directorPreview" style="margin-top:10px">编排预览（JSON beats + job packs）</label>
+      <pre id="directorPreview" class="director-preview">尚未编排</pre>
+      <label for="dirJsonPaste">从 JSON 粘贴应用（外部 LLM 返回）</label>
+      <textarea id="dirJsonPaste" rows="3" spellcheck="false" placeholder='粘贴 {"selected":{...},"timeline":[...],"editMode":"continuous"}'></textarea>
+      <div class="actions" style="margin-top:8px">
+        <button type="button" class="btn" id="btnDirPasteJson">从 JSON 粘贴应用</button>
+      </div>
+    </div>
+
     <div class="panel timeline-panel" id="timelinePanel">
       <div class="timeline-head">
         <h2>动作时间轴 / 一套组合</h2>
@@ -70,7 +126,7 @@
       </div>
       <div id="timelineRows" class="timeline-rows"></div>
       <p class="hint" style="margin-top:10px;line-height:1.55" id="tlHint">
-        每段选类别 + 动作 + 秒数（单段最长 15s）。<strong>MINIMAX H3 单次生成总长也不得超过约 15s</strong>；超过会自动拆成多条 ≤15s 任务。≥2 段即可生成衔接提示。
+        每段选类别 + 动作 + 秒数（单段最长 15s）。含「重口味·强制/CNC」类别。<strong>MINIMAX H3 单次生成总长也不得超过约 15s</strong>；超过会自动拆成多条 ≤15s 任务。
       </p>
       <p class="tl-warn" id="tlWarn" hidden></p>
     </div>
@@ -88,13 +144,32 @@
         <div class="panel">
           <h3>实时预览</h3>
           <p class="hint" id="metaLine" style="margin-bottom:10px"></p>
+
+          <div class="polish-bar">
+            <label class="chk-ai" for="chkAiPolish">
+              <input type="checkbox" id="chkAiPolish" />
+              <span>AI 润色提示词</span>
+            </label>
+            <button type="button" class="btn ghost btn-xs" id="btnRunPolish">重新润色</button>
+          </div>
+          <p class="hint" style="margin:4px 0 10px">默认<strong>直接组装</strong>（积木+时间轴，非 AI）。打开润色后对每条 H3 JOB 调用兼容 API；失败仍保留原文。</p>
+
           <div id="refSlotHost"></div>
-          <label for="outPrompt">最终提示词（含时间轴衔接优化）</label>
+          <label for="outPrompt">直接组装提示词（原文）</label>
           <textarea id="outPrompt" spellcheck="false"></textarea>
+
+          <div id="polishWrap" hidden>
+            <label for="outPolished" style="margin-top:10px">AI 润色后</label>
+            <textarea id="outPolished" spellcheck="false" placeholder="开启「AI 润色」并配置 API 后生成…"></textarea>
+          </div>
+
+          <div id="jobPromptsHost" class="job-prompts-host"></div>
+
           <label for="outNeg" style="margin-top:10px">负面提示词 / 排除项</label>
           <textarea id="outNeg" style="min-height:100px" spellcheck="false"></textarea>
           <div class="actions" style="margin-top:12px">
             <button type="button" class="btn primary" id="btnCopy">复制提示词</button>
+            <button type="button" class="btn ghost" id="btnCopyRaw" hidden>复制原文</button>
             <button type="button" class="btn secondary" id="btnCopyNeg">复制负面</button>
             <button type="button" class="btn" id="btnJson">导出 JSON</button>
             <button type="button" class="btn" id="btnTxt">导出 TXT</button>
@@ -103,10 +178,11 @@
         <div class="panel">
           <h3>使用提示</h3>
           <p class="hint" style="line-height:1.6;margin:0">
-            1) 选模型与模式 → 2) 勾选积木 → 3) 在时间轴添加 ≥3 段动作并选剪辑策略 → 4) 复制右侧 prompt<br/>
-            <strong>一镜到底</strong>：morph / continuous take，禁止硬切。<br/>
-            <strong>多镜头</strong>：match cut / raccord，匹配视线与动作惯性。<br/>
-            I2V：外貌靠参考图；Multi-ref：按槽位上传。本地 H3 / 允许成人内容的部署更稳妥。
+            1) 选模型与模式 → 2) 导演台粘贴情节或点选积木 → 3) 时间轴 ≥1 段并选剪辑策略 → 4) 右侧按 JOB 复制（各 ≤15s）<br/>
+            <strong>直接组装</strong>：默认，不调用 AI。<br/>
+            <strong>AI 润色</strong>：可选，改写措辞增强 H3 电影感，不改变节拍边界。<br/>
+            <strong>一镜到底</strong>：morph / continuous take。<strong>多镜头</strong>：match cut / raccord。<br/>
+            暗黑模块均为 21+ 虚构成人 CNC 幻想。
           </p>
         </div>
       </aside>
@@ -114,12 +190,13 @@
 
     <footer class="note">
       本地单页工具 · 零构建依赖 · 仅生成提示词模板 · 不生成或托管色情媒体文件<br/>
-      打开方式：双击 index.html，或 <code>cd /workspace/nsfw-sex-prompt-skill && python3 -m http.server 8765</code>
+      打开方式：双击 index.html，或 <code>cd web-app && python3 -m http.server 8765</code>
     </footer>
   </div>
 
   <div class="toast" id="toast"></div>
   <script src="data.js"></script>
+  <script src="director.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

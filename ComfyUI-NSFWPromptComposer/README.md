@@ -103,3 +103,8 @@ python3 sync_from_data_js.py   # reads ../web-app/data.js → prompt_data.json
 ```
 
 Do not hand-edit two copies of pose/scene lists.
+
+
+## v1.3 数据
+
+`prompt_data.json` 已含 `darkActs` 重口味积木；用 `sync_from_data_js.py` 从 `web-app/data.js` 同步。Action Timeline 的 category 可为 `darkActs`。

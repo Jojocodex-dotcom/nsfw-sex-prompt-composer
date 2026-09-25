@@ -1,13 +1,13 @@
 /**
  * NSFW Sex Video Prompt Skill — structured building blocks
  * Shared by UI (index.html/app.js) and SKILL_DRAFT.md concepts.
- * HARD RULE: all subjects are consenting adults 21+. No minors, no age-ambiguous, no real celebrities.
+ * HARD RULE: all subjects are adults 21+. Fictional CNC/dark fantasy allowed. No minors, no age-ambiguous, no real celebrities, no snuff/gore, no bestiality.
  */
 window.PROMPT_DATA = {
   meta: {
     title: "性爱视频提示词组合器",
-    version: "1.2.0",
-    ageGate: "21+ ONLY — 双方均为自愿成年人的虚构成人内容。禁止未成年、年龄模糊、真实人物姓名/肖像。",
+    version: "1.3.0",
+    ageGate: "21+ ONLY — 虚构成人内容。允许成人(21+)间 CNC/强制/轮奸/调教/迷奸等暗黑幻想描写；禁止未成年、年龄模糊、真实人物姓名/肖像、虐杀/极端血腥、兽交。",
     models: [
       { id: "minimax_h3", label: "MINIMAX H3（Hailuo/海螺类）", hint: "单次生成最长约 15s；偏运动/运镜/声景；I2V 少写外貌" },
       { id: "qwen_image", label: "QWEN IMAGE 2.1", hint: "偏详细姿势/场景描写；适合定帧再 I2V" }
@@ -31,7 +31,10 @@ window.PROMPT_DATA = {
     { id: "mm", label: "男男 (M/M)", en: "two adult men, both clearly 21+", zh: "两名成年男性，双方明显21岁以上" },
     { id: "ff", label: "女女 (F/F)", en: "two adult women, both clearly 21+", zh: "两名成年女性，双方明显21岁以上" },
     { id: "mf_plus", label: "三人·双女一男 (21+)", en: "three consenting adults 21+: two women and one man", zh: "三名自愿成年人(21+)：两女一男" },
-    { id: "mf_plus2", label: "三人·双男一女 (21+)", en: "three consenting adults 21+: two men and one woman", zh: "三名自愿成年人(21+)：两男一女" }
+    { id: "mf_plus2", label: "三人·双男一女 (21+)", en: "three consenting adults 21+: two men and one woman", zh: "三名自愿成年人(21+)：两男一女" },
+    { id: "gang_mf", label: "一女多男(21+)", en: "one adult woman and multiple adult men, all clearly 21+, fictional gangbang fantasy", zh: "一名成年女性与多名成年男性，全部明显21+，虚构轮奸幻想" },
+    { id: "gang_mm", label: "一男多男(21+)", en: "one adult man and multiple adult men, all clearly 21+, fictional group fantasy", zh: "一名成年男性与多名成年男性，全部明显21+，虚构群戏幻想" },
+    { id: "gang_ff", label: "一女多女(21+)", en: "one adult woman and multiple adult women, all clearly 21+, fictional group fantasy", zh: "一名成年女性与多名成年女性，全部明显21+，虚构群戏幻想" }
   ],
 
   bodyTags: [
@@ -62,7 +65,17 @@ window.PROMPT_DATA = {
     { id: "locker_gym", label: "健身房更衣室", en: "empty gym locker room after hours, metal lockers, harsh overhead fluorescents softened by steam", zh: "下班后空更衣室，金属柜，顶灯与蒸汽柔化" },
     { id: "tent_camping", label: "露营帐篷", en: "small camping tent interior, sleeping bags, lantern glow, fabric walls close around adults", zh: "小帐篷内，睡袋，露营灯暖光，布壁贴近" },
     { id: "yacht_cabin", label: "游艇舱室", en: "yacht cabin berth, gentle sway, porthole moonlight, polished wood panels", zh: "游艇舱铺，轻晃，舷窗月光，木板饰面" },
-    { id: "library_private", label: "私人书房", en: "private study lined with bookshelves, leather armchair, warm reading lamp", zh: "私人书房书架，皮椅，阅读灯暖光" }
+    { id: "library_private", label: "私人书房", en: "private study lined with bookshelves, leather armchair, warm reading lamp", zh: "私人书房书架，皮椅，阅读灯暖光" },
+    { id: "warehouse_dark", label: "废弃仓库", en: "abandoned warehouse at night, concrete pillars, single hanging bulb, dusty air, adult CNC fantasy set, all performers 21+", zh: "夜间废弃仓库，混凝土柱，孤灯，尘雾，成人口径 CNC 幻想场景，所有表演者21+" },
+    { id: "locked_bedroom", label: "上锁卧室", en: "locked bedroom interior, door bolted, dim lamp, rumpled bed, private adult non-con fantasy between adults 21+", zh: "上锁卧室，门闩，昏灯，凌乱床，21+成人非自愿幻想私密空间" },
+    { id: "motel_dark", label: "廉价旅馆暗房", en: "cheap motel room at night, thin curtains, neon bleed, stained carpet, dark adult fantasy atmosphere, adults 21+", zh: "廉价旅馆夜房，薄帘霓虹渗光，暗色成人幻想氛围，21+" },
+    { id: "dungeon_playroom", label: "地牢玩乐室", en: "private BDSM dungeon playroom, padded bench, wall restraints, warm low lights, consensual-looking extreme adult play set for adults 21+", zh: "私人 BDSM 地牢玩乐室，软垫长椅，墙缚具，暖低光，21+成人极端玩法布景" },
+    { id: "van_interior", label: "厢式车内", en: "cargo van interior, metal walls, folded blanket, confined adult kidnapping-fantasy set, all adults clearly 21+", zh: "厢式货车内，金属壁，折叠毯，局促绑架幻想布景，所有人明显21+" },
+    { id: "alley_night", label: "夜巷角落", en: "narrow alley at night, wet asphalt, distant streetlight, risky public adult CNC fantasy, adults 21+", zh: "夜间窄巷，湿沥青，远处路灯，公共风险成人 CNC 幻想，21+" },
+    { id: "office_coerce", label: "办公室胁迫幻想", en: "empty office after hours, blinds shut, desk cleared, adult blackmail/coercion fantasy between adults 21+", zh: "下班后空办公室，百叶紧闭，桌面腾空，21+成人胁迫幻想" },
+    { id: "club_vip", label: "俱乐部 VIP 包厢", en: "club VIP backroom, leather booth, bass thump muffled, purple accent lights, adult dark fantasy, 21+", zh: "俱乐部 VIP 包厢，皮座，低沉贝斯，紫光，成人暗黑幻想，21+" },
+    { id: "basement_cellar", label: "地下室", en: "dim basement cellar, concrete floor, single lamp, adult captivity fantasy set, performers 21+", zh: "昏暗地下室，水泥地，孤灯，成人囚禁幻想，表演者21+" },
+    { id: "hotel_penthouse_dark", label: "顶层套房暗调", en: "dark luxury penthouse suite, city lights through glass, dramatic shadows, intense adult fantasy, 21+", zh: "暗调豪华顶层套房，玻璃外城市灯火，戏剧阴影，激烈成人幻想，21+" }
   ],
 
   /* —— 前戏 —— */
@@ -127,6 +140,44 @@ window.PROMPT_DATA = {
     { id: "double_stim", label: "双重刺激", en: "penetration plus vibrator or fingers on clit/prostate, layered climax build", zh: "进入同时震动或手指刺激阴蒂/前列腺，叠加高潮" }
   ],
 
+  /* —— 重口味·强制/非自愿幻想(21+虚构) —— */
+  darkActs: [
+    { id: "cnc_struggle_pin", label: "强制·挣扎压制(CNC)", en: "fictional adult CNC fantasy 21+: adult struggles while being firmly pinned to the bed/floor by another adult, wrists held, clothes half-torn, forced non-consensual fantasy between adults only", zh: "虚构成人 CNC 幻想(21+)：成人挣扎被另一成人牢牢压制在床/地，手腕按住，衣物半撕，仅限成人非自愿幻想" },
+    { id: "cnc_tear_clothes", label: "强制·撕衣(CNC)", en: "fictional adult CNC 21+: rough tearing of clothing from a resisting adult body, fabric ripping, exposed skin, pinning hands, non-consensual fantasy between adults", zh: "虚构成人 CNC(21+)：对挣扎成人体粗暴撕衣，布料撕裂，肌肤暴露，按住手，成人非自愿幻想" },
+    { id: "cnc_forced_entry", label: "强制·强行进入(CNC)", en: "fictional adult CNC 21+: forced penetration of a pinned struggling adult, rough deep thrusts, muffled cries, adult non-consensual fantasy only — all 21+", zh: "虚构成人 CNC(21+)：压制挣扎成人后强行进入，粗暴深顶，闷声哭喊，仅成人非自愿幻想" },
+    { id: "cnc_rough_thrust", label: "强制·粗暴抽送(CNC)", en: "fictional adult CNC 21+: relentless rough thrusting while adult is held down, skin slap, desperate grip, non-con fantasy adults only", zh: "虚构成人 CNC(21+)：成人被按住时不停粗暴抽送，肌肤拍击，死死抓住，仅成人非自愿幻想" },
+    { id: "cnc_muffled_cry", label: "强制·捂嘴闷叫(CNC)", en: "fictional adult CNC 21+: hand over mouth muffling cries during forced sex fantasy, tear-streaked adult face, adults 21+ only", zh: "虚构成人 CNC(21+)：强迫性交幻想中捂嘴闷叫，成人泪痕面容，仅21+" },
+    { id: "cnc_hair_pull", label: "强制·抓发后入(CNC)", en: "fictional adult CNC 21+: hair pulled back during forced doggy-style fantasy, arched adult body, rough rear thrusts, adults only", zh: "虚构成人 CNC(21+)：强制后入幻想中抓发后仰，弓起成人体，粗暴后入，仅成人" },
+    { id: "gang_surround", label: "轮奸·围拢(21+)", en: "fictional adult gangbang fantasy 21+: one adult woman surrounded by multiple adult men, hands on her body, taking turns setup, all clearly 21+", zh: "虚构成人轮奸幻想(21+)：一成年女性被多名成年男性围拢，接手体，轮流准备，全部明显21+" },
+    { id: "gang_oral_train", label: "轮奸·口部轮流(21+)", en: "fictional adult gangbang 21+: multiple adult men taking turns oral on one adult, face surrounded, saliva shine, adults only", zh: "虚构成人轮奸(21+)：多名成年男性对一成人轮流口交，面部被围，唾液光泽，仅成人" },
+    { id: "gang_penetration_chain", label: "轮奸·进入轮换(21+)", en: "fictional adult gangbang 21+: adult men taking turns penetrating one adult, held in position, continuous chain of thrusts, all 21+", zh: "虚构成人轮奸(21+)：多名成年男性轮流进入一成人，固定姿势，连续抽送链，全部21+" },
+    { id: "gang_dp_fantasy", label: "轮奸·双插幻想(21+)", en: "fictional adult double-penetration gangbang fantasy between adults framed as CNC/dark fantasy, all performers clearly 21+", zh: "虚构成人双插轮奸幻想，以 CNC/暗黑幻想呈现，所有表演者明显21+" },
+    { id: "gang_finish_marks", label: "轮奸·轮番结束痕迹(21+)", en: "fictional adult gangbang climax fantasy: multiple adult finishes on body, stylized marks, no gore, all adults 21+", zh: "虚构成人轮奸高潮幻想：多成人结束痕迹于身体，风格化痕迹非血腥，全部21+" },
+    { id: "train_collar_leash", label: "调教·项圈牵引", en: "extreme adult BDSM training fantasy 21+: collar and leash on adult submissive, guided on all fours, dominant adult leading, fictional adults only", zh: "极端成人 BDSM 调教幻想(21+)：成人顺从者戴项圈被牵引四肢着地，主导成人引领，仅虚构成人" },
+    { id: "train_spank_count", label: "调教·计数打臀", en: "adult training fantasy 21+: firm spanking with counted strikes on adult buttocks, reddened stylized skin, verbal discipline, adults only", zh: "成人调教幻想(21+)：对成人臀部计数拍打，风格化红痕，口头训诫，仅成人" },
+    { id: "train_orgasm_control", label: "调教·高潮控制", en: "adult orgasm-control training 21+: forced edge then denied climax, trembling adult body, dominant commands, fictional adults", zh: "成人高潮控制调教(21+)：强制边缘后禁止高潮，颤抖成人体，主导命令，虚构成人" },
+    { id: "train_forced_orgasm", label: "调教·强制高潮", en: "adult forced-orgasm training fantasy 21+: overstimulation to climax against resistance, vibrator or hands, adults only", zh: "成人强制高潮调教幻想(21+)：抗拒中被过度刺激至高潮，震动或手，仅成人" },
+    { id: "train_pet_play", label: "调教·宠物扮演", en: "adult pet-play training fantasy 21+: collar, kneel, bowl aesthetic, humiliation-lite dialogue, clearly adult roleplay 21+", zh: "成人宠物扮演调教幻想(21+)：项圈跪姿碗具美学，轻度羞辱对白，明确成人角色扮演21+" },
+    { id: "train_humiliate_talk", label: "调教·羞辱对白", en: "adult humiliation dialogue training fantasy 21+: dominant verbal degradation during restraint, submissive adult responses, fictional CNC/BDSM adults only", zh: "成人羞辱对白调教幻想(21+)：束缚中主导言语贬低，顺从成人回应，仅虚构 CNC/BDSM 成人" },
+    { id: "train_position_hold", label: "调教·强制摆姿", en: "adult training 21+: forced to hold exposing positions for inspection, trembling thighs, collar, adults only", zh: "成人调教(21+)：强制保持暴露姿势受检视，大腿发抖，项圈，仅成人" },
+    { id: "drug_drowsy_setup", label: "迷奸·昏沉铺垫(幻想)", en: "fictional adult drug-rape fantasy 21+ ONLY: drowsy heavy-lidded adult, limp limbs, dim room — framed as fantasy between adults, never imply real crime victims or minors", zh: "仅虚构成人迷奸幻想(21+)：昏沉半闭眼成人，四肢发软，昏室——明确幻想成人向，绝不暗示真实受害者或未成年" },
+    { id: "drug_limp_use", label: "迷奸·软体使用(幻想)", en: "fictional adult sleep-sex / drug fantasy 21+: limp adult body carefully positioned and used while appearing unconscious-looking, soft breathing, adults 21+ fantasy only", zh: "虚构成人昏睡/迷奸幻想(21+)：软绵成人身体被摆放使用，看似无意识，轻呼吸，仅21+幻想" },
+    { id: "drug_wake_halfway", label: "迷奸·半醒挣扎(幻想)", en: "fictional adult drug fantasy 21+: half-waking adult realizes being used, weak resistance, dazed eyes, CNC drug fantasy adults only", zh: "虚构成人迷奸幻想(21+)：半醒成人察觉被使用，无力挣扎，恍惚眼神，仅成人 CNC 迷药幻想" },
+    { id: "kidnap_van_grab", label: "绑架幻想·拖入车", en: "fictional adult kidnapping fantasy setup 21+: adult seized and pulled into van interior, struggle briefly, door slam, adults only fantasy", zh: "虚构成人绑架幻想铺垫(21+)：成人被抓住拖入厢车，短暂挣扎，关门，仅成人幻想" },
+    { id: "blackmail_coerce", label: "勒索胁迫幻想", en: "fictional adult blackmail coercion fantasy 21+: reluctant adult complies under threat dialogue, tense office/motel, adults only", zh: "虚构成人勒索胁迫幻想(21+)：威胁对白下勉强顺从，紧张办公室/旅馆，仅成人" },
+    { id: "public_risk_almost", label: "公共风险·差点被发现", en: "adult public-risk almost-caught fantasy 21+: muffled sex in risky location, footsteps nearby, freeze then resume, adults only", zh: "成人公共风险差点被发现幻想(21+)：风险地点闷声性爱，附近脚步，停顿再继续，仅成人" },
+    { id: "object_toy_insert", label: "器具插入", en: "adult object/toy insertion fantasy 21+: toy or plug inserted into restrained adult, careful explicit framing, adults only", zh: "成人器具插入幻想(21+)：玩具/塞对束缚成人插入，明确成人向，仅成人" },
+    { id: "spit_play", label: "唾液玩法", en: "adult spit play fantasy 21+: spit on tongue/chest/face between adults during rough scene, degrading aesthetic, adults only", zh: "成人唾液玩法幻想(21+)：粗暴场景中成人间唾液于舌/胸/脸，贬低美学，仅成人" },
+    { id: "slap_face_consensual_extreme", label: "掌掴(极端玩法外观)", en: "adult impact play fantasy 21+: open-hand slap to cheek during rough sex aesthetic, stylized not injurious gore, adults only", zh: "成人击打玩法幻想(21+)：粗暴性爱美学中开掌掴颊，风格化非重伤血腥，仅成人" },
+    { id: "bondage_rope_full", label: "绳缚全身", en: "adult shibari-style full rope bondage 21+: intricate rope on adult torso and limbs, exposed, helpless pose, adults only", zh: "成人全身绳缚(21+)：躯干四肢复杂绳索，暴露无助姿势，仅成人" },
+    { id: "ball_gag_wear", label: "口球佩戴", en: "adult ball-gag wear 21+: ball gag strapped, muffled sounds, drool, restrained adult, fantasy adults only", zh: "成人口球(21+)：口球固定，闷声涎水，束缚成人，仅幻想成人" },
+    { id: "blindfold_dark", label: "蒙眼暗黑", en: "adult blindfold sensory deprivation 21+: opaque blindfold, heightened touch during dark fantasy scene, adults only", zh: "成人蒙眼感官剥夺(21+)：不透光眼罩，暗黑幻想中触觉放大，仅成人" },
+    { id: "creampie_breed_talk", label: "中出·繁殖对白", en: "adult creampie breeding-talk fantasy 21+: internal finish with breeding dirty talk, adult CNC or consensual dark framing, adults only", zh: "成人中出繁殖对白幻想(21+)：体内结束配繁殖情色对白，CNC 或暗黑自愿框架，仅成人" },
+    { id: "facial_finish", label: "颜射结束", en: "adult facial finish fantasy 21+: climax on adult face, closed eyes, stylized, adults only", zh: "成人颜射结束幻想(21+)：高潮于成人面部，闭眼，风格化，仅成人" },
+    { id: "body_writing", label: "身体写字", en: "adult body-writing humiliation fantasy 21+: marker words on adult skin, degrading labels, adults only", zh: "成人体写字羞辱幻想(21+)：马克笔字迹于成人皮肤，贬低标签，仅成人" },
+    { id: "marks_bruises_stylized", label: "痕迹/淤青风格化", en: "stylized adult marks and light bruises from rough play fantasy — not gore, not snuff — adults 21+ only", zh: "风格化成人粗暴玩法痕迹与浅淤青——非血腥非虐杀——仅21+成人" }
+  ],
+
   /* —— 节奏强度 —— */
   rhythm: [
     { id: "slow_tender", label: "缓慢温柔", en: "slow tender rhythm, long deep strokes, lingering pauses, loving pace", zh: "缓慢温柔节奏，长深抽送，停顿留恋，深情步调" },
@@ -165,7 +216,13 @@ window.PROMPT_DATA = {
     { id: "dirty_talk", label: "情色短句", en: "brief consensual dirty talk, explicit but affectionate", zh: "简短自愿情色对白，露骨却亲昵", dialogue: true },
     { id: "name_moan", label: "唤名喘息", en: "moaning partner's name softly between thrusts", zh: "抽送间轻唤对方名字", dialogue: true },
     { id: "laugh_intimate", label: "亲密轻笑", en: "intimate quiet laugh mid-motion, playful adult chemistry", zh: "动作中亲密轻笑，玩味成人化学反应" },
-    { id: "climax_face", label: "高潮表情", en: "climax expression: eyes half-closed, mouth open, body tensing then releasing", zh: "高潮表情：半闭眼张口，身体绷紧后释放" }
+    { id: "climax_face", label: "高潮表情", en: "climax expression: eyes half-closed, mouth open, body tensing then releasing", zh: "高潮表情：半闭眼张口，身体绷紧后释放" },
+    { id: "fear_pleasure_mix", label: "恐惧与快感交织", en: "mixed fear and involuntary pleasure on adult face, brows knit, mouth open, CNC fantasy adults 21+", zh: "成人面部恐惧与非自愿快感交织，眉蹙张口，CNC 幻想21+" },
+    { id: "muffled_sound", label: "闷声呜咽", en: "muffled whimpers behind hand or gag, wet eyes, adult CNC fantasy", zh: "手或口球后闷声呜咽，湿润眼睛，成人 CNC 幻想" },
+    { id: "tears_cnc", label: "泪痕(成人CNC)", en: "tear tracks on flushed adult cheeks during non-con fantasy, clearly adult 21+", zh: "非自愿幻想中潮红成人颊上泪痕，明确成人21+" },
+    { id: "dazed_drowsy", label: "恍惚昏沉", en: "dazed heavy-lidded adult expression, slack mouth, drug-fantasy aesthetic 21+", zh: "恍惚半闭眼成人表情，嘴微张，迷奸幻想美学21+" },
+    { id: "defiant_glare", label: "反抗怒视", en: "defiant glare through tears while restrained, adult resistance, 21+", zh: "束缚中含泪怒视反抗，成人抵抗，21+" },
+    { id: "breaking_submit", label: "逐渐臣服", en: "breaking into reluctant submission expression, eyes lowering, adult training arc 21+", zh: "逐渐勉强臣服表情，目光垂下，成人调教弧21+" }
   ],
 
   dialogueSnippets: [
@@ -176,7 +233,13 @@ window.PROMPT_DATA = {
     { id: "d5", label: "「我快到了」", en: '<d>[Chinese] 我快到了…</d>', zh: "我快到了…" },
     { id: "d6", label: "「Come here」", en: '<d>[English] Come here.</d>', zh: "Come here." },
     { id: "d7", label: "「Stay with me」", en: '<d>[English] Stay with me.</d>', zh: "Stay with me." },
-    { id: "d8", label: "「You feel so good」", en: '<d>[English] You feel so good.</d>', zh: "You feel so good." }
+    { id: "d8", label: "「You feel so good」", en: '<d>[English] You feel so good.</d>', zh: "You feel so good." },
+    { id: "dd1", label: "「不许动」", en: "<d>[Chinese] 不许动。</d>", zh: "不许动。" },
+    { id: "dd2", label: "「乖乖受着」", en: "<d>[Chinese] 乖乖受着。</d>", zh: "乖乖受着。" },
+    { id: "dd3", label: "「数出来」", en: "<d>[Chinese] 数出来。</d>", zh: "数出来。" },
+    { id: "dd4", label: "「谁允许你高潮了」", en: "<d>[Chinese] 谁允许你高潮了？</d>", zh: "谁允许你高潮了？" },
+    { id: "dd5", label: "「Take it」", en: "<d>[English] Take it.</d>", zh: "Take it." },
+    { id: "dd6", label: "「You are mine tonight」", en: "<d>[English] You are mine tonight.</d>", zh: "You are mine tonight." }
   ],
 
   /* —— 服装道具 —— */
@@ -192,7 +255,15 @@ window.PROMPT_DATA = {
     { id: "vibrator_prop", label: "震动棒入镜", en: "vibrator visible in frame assisting stimulation", zh: "震动棒入镜辅助刺激" },
     { id: "lube", label: "润滑液可见", en: "lube bottle nearby, glossy wet sheen on skin and toy/shaft", zh: "润滑液瓶在侧，皮肤与器物闪亮湿泽" },
     { id: "condom", label: "安全套可见", en: "condom visibly in use, responsible adult sex", zh: "安全套使用可见，负责任成人性爱" },
-    { id: "collar_play", label: "项圈玩法(自愿)", en: "consensual soft collar aesthetic, light BDSM flavor between adults", zh: "自愿软项圈美学，成人轻度 BDSM 风味" }
+    { id: "collar_play", label: "项圈玩法(自愿)", en: "consensual soft collar aesthetic, light BDSM flavor between adults", zh: "自愿软项圈美学，成人轻度 BDSM 风味" },
+    { id: "torn_clothes", label: "撕破衣物", en: "torn and ripped clothing hanging off adult body, exposed skin, struggle aftermath aesthetic", zh: "撕破衣物挂在成人体上，肌肤暴露，挣扎后美学" },
+    { id: "duct_tape", label: "胶带封口/束缚", en: "duct tape over mouth and/or binding adult wrists, dark fantasy prop, adults 21+", zh: "胶带封口及/或缚住成人手腕，暗黑幻想道具，21+" },
+    { id: "rope_visible", label: "绳索可见", en: "visible bondage rope on adult limbs and torso", zh: "成人四肢与躯干可见绳缚" },
+    { id: "collar_leash_set", label: "项圈牵引绳套装", en: "leather collar with attached leash on adult submissive, BDSM training aesthetic 21+", zh: "成人顺从者皮项圈与牵引绳，BDSM 调教美学21+" },
+    { id: "blindfold_opaque", label: "不透光眼罩", en: "opaque black blindfold covering adult eyes", zh: "不透光黑眼罩遮住成人双眼" },
+    { id: "ball_gag_prop", label: "口球道具", en: "ball gag strapped in adult mouth, saliva string", zh: "口球固定于成人口中，涎丝" },
+    { id: "lingerie_ripped", label: "情趣内衣撕破", en: "ripped lingerie still partially on adult body, straps broken", zh: "撕破情趣内衣仍半挂成人体，吊带断裂" },
+    { id: "tape_wrists", label: "胶封手腕", en: "wrists taped together above head on adult, restrained pose", zh: "成人手腕胶封于头顶，束缚姿势" }
   ],
 
   /* —— 叙事弧 —— */
@@ -202,7 +273,12 @@ window.PROMPT_DATA = {
     { id: "arc_full", label: "开始→高潮→余韵", en: "full arc: soft start → intense climax → tender afterglow cuddle", zh: "完整弧：温柔开始 → 激烈高潮 → 余韵拥抱" },
     { id: "arc_edge", label: "边缘→爆发", en: "arc: repeated edging denial → final explosive climax", zh: "弧：多次边缘压抑 → 最终爆发高潮" },
     { id: "arc_quickie", label: "急促Quickie", en: "quickie arc: urgent undress → short intense sex → breathless pause", zh: "Quickie：急脱 → 短促激烈 → 喘息停顿" },
-    { id: "arc_morning", label: "晨间慢热", en: "morning arc: sleepy kisses → slow entry → languid finish in daylight", zh: "晨间：睡意吻 → 缓慢进入 → 日光中慵懒结束" }
+    { id: "arc_morning", label: "晨间慢热", en: "morning arc: sleepy kisses → slow entry → languid finish in daylight", zh: "晨间：睡意吻 → 缓慢进入 → 日光中慵懒结束" },
+    { id: "arc_forced_break", label: "强制→崩溃→高潮", en: "narrative arc: forced resistance → psychological breaking → climax surrender — fictional adult CNC 21+", zh: "叙事弧：强制反抗 → 心理崩溃 → 高潮臣服——虚构成人 CNC 21+" },
+    { id: "arc_train_progress", label: "调教递进", en: "training progression arc: collar intro → discipline → enforced orgasm — adults 21+", zh: "调教递进弧：项圈引入 → 惩戒 → 强制高潮——成人21+" },
+    { id: "arc_gang_rounds", label: "轮奸多轮", en: "gangbang rounds arc: surround → oral round → penetration rotation → finish — adults 21+", zh: "轮奸多轮弧：围拢 → 口部轮 → 进入轮换 → 结束——成人21+" },
+    { id: "arc_drug_wake", label: "迷奸·昏→半醒", en: "drug fantasy arc: drowsy limp use → half-wake struggle → dazed climax — adult fantasy 21+ only", zh: "迷奸幻想弧：昏沉软体使用 → 半醒挣扎 → 恍惚高潮——仅成人幻想21+" },
+    { id: "arc_kidnap_escalate", label: "绑架升级", en: "kidnap fantasy arc: grab/van → restraint reveal → forced use — adults 21+ fiction", zh: "绑架幻想弧：抓入车 → 束缚揭示 → 强制使用——21+虚构成人" }
   ],
 
   /* —— 多参考槽位说明 —— */

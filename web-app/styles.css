@@ -248,3 +248,149 @@ footer.note {
   color: #ff9a6b !important;
   font-weight: 700;
 }
+
+/* —— Story Director —— */
+.director-panel {
+  margin-bottom: 16px;
+  border-color: #6b3a4a;
+  background: linear-gradient(180deg, #24141c 0%, var(--card) 48%);
+  box-shadow: 0 0 0 1px rgba(232, 93, 142, 0.12);
+}
+.director-panel h2 { color: #ffb0c8; }
+.director-warn {
+  background: #3a1522;
+  border: 1px solid #8a3a55;
+  color: #ffd0e0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px !important;
+  line-height: 1.5;
+}
+.director-panel label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 6px 0;
+  font-weight: 600;
+}
+.director-panel textarea,
+.director-panel input[type="text"],
+.director-panel input[type="number"],
+.director-panel input[type="password"] {
+  width: 100%;
+  background: #120f18;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.director-controls {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 12px;
+  margin-top: 10px;
+  align-items: end;
+}
+@media (max-width: 720px) {
+  .director-controls { grid-template-columns: 1fr; }
+}
+.director-preview {
+  max-height: 220px;
+  overflow: auto;
+  background: #120f18;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #e0d4f0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dir-api-toggle {
+  margin-top: 10px;
+  width: 100%;
+  text-align: left;
+}
+.dir-api-body {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px dashed #6b3a4a;
+  border-radius: 8px;
+  background: rgba(0,0,0,.2);
+}
+
+/* —— Dark module accent —— */
+.mod-dark {
+  border-color: #8a3a55;
+}
+.mod-dark .mod-head {
+  background: #2a1520;
+}
+.mod-dark .mod-head strong { color: #ffb0c8; }
+.mod-dark .chip.selected {
+  background: rgba(192, 60, 90, 0.35);
+  border-color: #e85d8e;
+}
+
+/* —— AI polish bar —— */
+.polish-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a2230;
+  border: 1px solid #3a4a68;
+  margin-bottom: 4px;
+}
+.chk-ai {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8d8ff;
+  cursor: pointer;
+  margin: 0;
+}
+.chk-ai input { width: 16px; height: 16px; accent-color: var(--accent2); }
+
+/* —— Per-job cards —— */
+.job-prompts-host { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.job-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--muted);
+}
+.job-head .count {
+  font-size: 11px; color: var(--accent3);
+  background: rgba(93,206,166,.12); padding: 2px 8px; border-radius: 999px;
+}
+.job-card {
+  background: #15121c;
+  border: 1px solid #4a3a68;
+  border-radius: 10px;
+  padding: 8px;
+}
+.job-card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: #d4c8e8; margin-bottom: 6px; font-weight: 600;
+}
+.job-ta {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  background: #0e0c14;
+  color: #e8dff2;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.btn-xs { padding: 4px 8px !important; font-size: 11px !important; }

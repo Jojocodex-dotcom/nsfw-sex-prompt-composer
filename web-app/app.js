@@ -750,6 +750,7 @@
         state.model = btn.dataset.model;
         $$("[data-model]").forEach((b) => b.classList.toggle("active", b === btn));
         $("#modelHint").textContent = D.meta.models.find((m) => m.id === state.model).hint;
+        renderTimeline();
         refreshPreview();
       });
     });

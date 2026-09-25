@@ -1,0 +1,249 @@
+{
+  "id": "nsfw-h3-director-studio-oneshot",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 3,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "NSFWDirectorStudio",
+      "pos": [
+        80,
+        80
+      ],
+      "size": [
+        440,
+        980
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "howto_text",
+          "type": "STRING",
+          "links": [
+            1
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "positive_prompt",
+          "type": "STRING",
+          "links": [
+            2
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 2
+        },
+        {
+          "name": "h3_jobs_text",
+          "type": "STRING",
+          "links": [
+            3
+          ],
+          "slot_index": 3
+        },
+        {
+          "name": "job1_prompt",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 4
+        },
+        {
+          "name": "job2_prompt",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 5
+        },
+        {
+          "name": "job3_prompt",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 6
+        },
+        {
+          "name": "brick_catalog",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 7
+        }
+      ],
+      "title": "NSFW H3 导演台",
+      "properties": {
+        "Node name for S&R": "NSFWDirectorStudio"
+      },
+      "widgets_values": null,
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 2,
+      "type": "ShowText|pysssss",
+      "pos": [
+        580,
+        40
+      ],
+      "size": [
+        500,
+        280
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 1,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "用法说明 howto",
+      "properties": {
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 3,
+      "type": "ShowText|pysssss",
+      "pos": [
+        580,
+        360
+      ],
+      "size": [
+        500,
+        360
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 2,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "正向提示词 positive",
+      "properties": {
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 4,
+      "type": "ShowText|pysssss",
+      "pos": [
+        580,
+        760
+      ],
+      "size": [
+        500,
+        360
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 3,
+          "widget": {
+            "name": "text"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "H3 分条 JOB",
+      "properties": {
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        ""
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      1,
+      1,
+      3,
+      0,
+      "STRING"
+    ],
+    [
+      3,
+      1,
+      3,
+      4,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "打开导演台 → 改下拉/粘贴章节 → Queue",
+      "bounding": [
+        40,
+        10,
+        1080,
+        1160
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "info": "NSFW H3 导演台一键示例。若无 ShowText|pysssss，请安装 ComfyUI-Custom-Scripts，或把输出接到任意 STRING 预览节点。"
+  },
+  "version": 0.4
+}

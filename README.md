@@ -43,26 +43,28 @@ python3 -m http.server 8765
 
 ```bash
 cp -r ComfyUI-NSFWPromptComposer /path/to/ComfyUI/custom_nodes/
-# 可选：从网页数据同步积木
 cd /path/to/ComfyUI/custom_nodes/ComfyUI-NSFWPromptComposer
-python3 sync_from_data_js.py   # 读取仓库根目录 web-app/data.js
-# 重启 ComfyUI → 节点分类 nsfw_prompt
+python3 sync_from_data_js.py   # 可选：从 web-app/data.js 同步积木
+# 重启 ComfyUI → 分类 nsfw_prompt
+# 推荐加载 example_workflows/NSFW_H3_导演台_一键.json
 ```
 
 | 文件 | 作用 |
 |------|------|
 | `__init__.py` | 注册节点 |
-| `nodes.py` | 三个节点实现 |
-| `prompt_data.json` | 插件内嵌积木数据 |
-| `sync_from_data_js.py` | 从 `web-app/data.js` 同步数据 |
-| `requirements.txt` | 依赖（当前无需重依赖） |
-| `README.md` | 插件专用说明（含 4B/8B NSFW 语言模型下载列表） |
+| `logic.py` | 编排/拼装/拆 H3 JOB（无 ComfyUI 也可 import） |
+| `nodes.py` | **2 个节点**：导演台 + 积木目录 |
+| `prompt_data.json` | 内嵌积木（含 darkActs） |
+| `example_workflows/` | 一键示例工作流 |
+| `sync_from_data_js.py` | 从 `web-app/data.js` 同步 |
+| `README.md` | 插件说明 |
 
-节点：
+节点（v1.4）：
 
-1. **NSFW LM Model List** — 4B / 8B uncensored 语言模型列表与 HF 下载信息  
-2. **Action Timeline Builder** — 多动作时间轴衔接优化  
-3. **NSFW Prompt Composer** — 拼装正/负提示词  
+1. **NSFW H3 导演台** (`NSFWDirectorStudio`) — 下拉选积木 / 粘贴章节本地编排 / ≤15s 拆条 / 可选 AI 润色；打开即有 `howto` 用法  
+2. **NSFW 积木目录** (`NSFWBrickCatalog`) — 中文可读目录 + JSON（含 LM 推荐）  
+
+旧三节点已移除，能力合并进导演台。  
 
 ---
 

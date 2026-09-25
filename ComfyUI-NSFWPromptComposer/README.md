@@ -1,110 +1,99 @@
 # ComfyUI-NSFWPromptComposer
 
-> **这是本仓库里唯一的 ComfyUI 插件目录。**  
-> 可视化网页程序在上级目录 [`../web-app/`](../web-app/)，不要把 `web-app` 装进 ComfyUI。  
-> 仓库总览见 [`../README.md`](../README.md)。
+> ComfyUI 自定义节点：**NSFW H3 导演台**（21+ 虚构成人提示词）。  
+> 打开节点即可用，**无需手写 JSON**。只注册 **2 个节点**。
 
-ComfyUI custom nodes that mirror the web **性爱视频提示词组合器** (`../web-app/index.html`).
+## 节点一览
 
-**Hard boundary:** 21+ consenting fictional adults only. No minors, no age ambiguity, no real celebrities. Nodes emit **prompt text only** — they do not generate or host adult media.
+| 显示名 | 类名 | 作用 |
+|--------|------|------|
+| **NSFW H3 导演台** | `NSFWDirectorStudio` | 一站式：下拉选积木 / 粘贴章节本地编排 / 拆 ≤15s H3 JOB / 可选 AI 润色 |
+| **NSFW 积木目录** | `NSFWBrickCatalog` | 输出可读中文积木目录 + JSON（含推荐 LM 列表） |
 
-## Install
+旧版三节点（LM 列表 / Timeline / Composer）已合并进导演台，**不再注册**。
 
-1. Copy or symlink this folder into ComfyUI custom nodes:
-
-```bash
-cp -r /path/to/nsfw-sex-prompt-skill/ComfyUI-NSFWPromptComposer \
-  /path/to/ComfyUI/custom_nodes/ComfyUI-NSFWPromptComposer
-```
-
-2. (Optional) sync brick data from the parent web UI:
+## 安装
 
 ```bash
+cp -r ComfyUI-NSFWPromptComposer /path/to/ComfyUI/custom_nodes/
 cd /path/to/ComfyUI/custom_nodes/ComfyUI-NSFWPromptComposer
-python3 sync_from_data_js.py
+python3 sync_from_data_js.py   # 可选：从 ../web-app/data.js → prompt_data.json
+# 重启 ComfyUI → 分类 nsfw_prompt
+# 推荐：Workflow → Open → example_workflows/NSFW_H3_导演台_一键.json
 ```
 
-3. Restart ComfyUI. Nodes appear under category **`nsfw_prompt`**.
+无重依赖。可选 AI 润色走 OpenAI 兼容 HTTP。
 
-`requirements.txt` is empty of heavy deps — logic is pure Python + bundled `prompt_data.json`.
+## 30 秒上手
 
-## Nodes
+1. 加载 `example_workflows/NSFW_H3_导演台_一键.json`
+2. 打开 **NSFW H3 导演台** —— 顶部 `howto` 即完整用法
+3. 下拉选 `subject` / `scene` / `beat1~3`，或：
+   - `arrange_mode = story_local`
+   - 在 `chapter_plot` 粘贴章节
+4. Queue Prompt → 查看 `howto_text` / `positive_prompt` / `h3_jobs_text` / `job1~3_prompt`
 
-| Node | Inputs | Outputs |
-|------|--------|---------|
-| **NSFW LM Model List** | `tier`: all / 4B / 8B | `model_list_text`, `model_list_json` — curated uncensored LM catalog with HF repo ids |
-| **Action Timeline Builder** | `timeline_json`, `edit_mode` (continuous\|multicut), `lang` | Optimized beat timeline + morph/match-cut transition prompt |
-| **NSFW Prompt Composer** | `model_type` (minimax_h3\|qwen_image), `mode` (i2v\|multiref), `edit_mode`, `lang`, `selection_json`, `timeline_json` | `positive_prompt`, `negative_prompt` |
+### 导演台主要输入
 
-### Timeline JSON schema
+| 字段 | 说明 |
+|------|------|
+| `howto` | 用法说明（默认已填） |
+| `model_type` | `minimax_h3` \| `qwen_image` |
+| `mode` | `i2v` \| `multiref` |
+| `edit_mode` | `continuous` 一镜到底 \| `multicut` 多镜头 |
+| `subject` / `scene` / `rhythm` / `arc` | 下拉，`中文标签 \| id` |
+| `camera1` `camera2` `expression1` `wardrobe1` | 可选，`(无)` 表示不用 |
+| `beat1~6_cat` / `_action` / `_sec` | 手动节拍；动作扁平 `[类别] 标签 \| cat/id` |
+| `arrange_mode` | `manual_beats` 或 `story_local`（章节覆盖手动节拍） |
+| `chapter_plot` | 粘贴章节；`story_local` 时本地关键词→积木→时间轴 |
+| `target_total_seconds` | 5–120，故事编排目标总时长 |
+| `ai_polish` + `api_base/key/model` | 可选：OpenAI 兼容接口润色每条 JOB |
+| `extra_selection_json` / `extra_timeline_json` | 高级可选，默认可空 |
 
-```json
-[
-  {"category": "foreplay", "action_id": "kiss_deep", "seconds": 3},
-  {"category": "oral", "action_id": "bj_kneel", "seconds": 5},
-  {"category": "sexPoses", "action_id": "missionary", "seconds": 8}
-]
-```
+### 输出
 
-`category` ∈ `foreplay` | `oral` | `sexPoses`. Ids come from `prompt_data.json` (same bricks as `../web-app/data.js`).
+| 输出 | 含义 |
+|------|------|
+| `howto_text` | 用法 + 本次积木摘要 |
+| `positive_prompt` | 正向（多 JOB 时为带标记总览） |
+| `negative_prompt` | 负向 |
+| `h3_jobs_text` | 全部 ≤15s 任务（含末帧衔接） |
+| `job1_prompt` / `job2_prompt` / `job3_prompt` | 前三条可接线（无则空串） |
+| `brick_catalog` | 短中文积木目录 |
 
-### Selection JSON schema
+## H3 ≤15 秒
 
-Keys map to brick id lists: `subjects`, `bodyTags`, `scenes`, `foreplay`, `oral`, `sexPoses`, `rhythm`, `cameras`, `expressions`, `dialogueSnippets`, `wardrobe`, `arcs`.
+时间轴更长时自动拆成多条 JOB；`job2+` 要求用上一条**最后一帧**做 I2V 首帧。
 
-### Edit modes
+## 与网页版对齐
 
-- **continuous（一镜到底）**: single unbroken take; morph/transition between beats; no hard cuts.
-- **multicut（多镜头）**: one shot per beat; match cut / raccord / eyeline & action match.
+`logic.py` 对齐 `../web-app/app.js` + `director.js`：
 
-## NSFW / Uncensored LM download list (verified HF)
+- `pack_h3_jobs` ← `packH3Jobs`
+- `arrange_from_story` ← `arrangeFromStory`
+- `compose_prompt` 含 `darkActs`
+- 可选 `ai_polish`
 
-### ~4B class (3B–4B)
-
-| Model | Params | Repo | Notes |
-|-------|--------|------|-------|
-| Qwen3-4B-Instruct-Uncensored | 4B | [`n0ctyx/Qwen3-4B-Instruct-Uncensored`](https://huggingface.co/n0ctyx/Qwen3-4B-Instruct-Uncensored) | Abliterated Qwen3-4B instruct |
-| Qwen3-4B-2507-Instruct-Uncensored-HauhauCS-Aggressive | 4B | [`HauhauCS/Qwen3-4B-2507-Instruct-Uncensored-HauhauCS-Aggressive`](https://huggingface.co/HauhauCS/Qwen3-4B-2507-Instruct-Uncensored-HauhauCS-Aggressive) | GGUF Q4_K_M ~2.4GB |
-| Phi-3.5-mini-instruct_Uncensored | 3.8B | [`SicariusSicariiStuff/Phi-3.5-mini-instruct_Uncensored`](https://huggingface.co/SicariusSicariiStuff/Phi-3.5-mini-instruct_Uncensored) | GGUF via `bartowski/...-GGUF` |
-| Phi-3.5-mini-instruct-heretic | 3.8B | [`askalgore/Phi-3.5-mini-instruct-heretic`](https://huggingface.co/askalgore/Phi-3.5-mini-instruct-heretic) | Heretic decensor |
-
-### ~8B class (7B–8B)
-
-| Model | Params | Repo | Notes |
-|-------|--------|------|-------|
-| Qwen2.5-7B-Instruct-Uncensored | 7B | [`Orion-zhen/Qwen2.5-7B-Instruct-Uncensored`](https://huggingface.co/Orion-zhen/Qwen2.5-7B-Instruct-Uncensored) | GGUF: `mradermacher/...-GGUF` Q4_K_M ~4.8GB — **recommended expand model** |
-| Llama-3.1-8B-Lexi-Uncensored | 8B | [`Orenguteng/Llama-3.1-8B-Lexi-Uncensored`](https://huggingface.co/Orenguteng/Llama-3.1-8B-Lexi-Uncensored) | + Lexi GGUF repo |
-| Llama-3.1-8B-Instruct-Uncensored-GGUF | 8B | [`ccharnkij/Llama-3.1-8B-Instruct-Uncensored-GGUF`](https://huggingface.co/ccharnkij/Llama-3.1-8B-Instruct-Uncensored-GGUF) | Ready Q4_K_M ~4.92GB |
-
-Example download:
-
-```bash
-huggingface-cli download Orion-zhen/Qwen2.5-7B-Instruct-Uncensored --local-dir ./models/llm/qwen25-7b-uncen
-# or GGUF:
-huggingface-cli download mradermacher/Qwen2.5-7B-Instruct-Uncensored-GGUF \
-  --include "*Q4_K_M*" --local-dir ./models/llm/qwen25-7b-uncen-gguf
-```
-
-Wire any of these through your preferred ComfyUI LLM / GGUF text node; feed expanded text into video I2V nodes. Keep a system rule: **21+ fictional adults only**.
-
-## Local import smoke test (no ComfyUI)
+## 本地冒烟（无需 ComfyUI）
 
 ```bash
 cd ComfyUI-NSFWPromptComposer
-python3 -c "from nodes import NODE_CLASS_MAPPINGS; print(sorted(NODE_CLASS_MAPPINGS))"
+python3 -c "
+from nodes import NODE_CLASS_MAPPINGS
+print(sorted(NODE_CLASS_MAPPINGS))
+s = NODE_CLASS_MAPPINGS['NSFWDirectorStudio']()
+req = s.INPUT_TYPES()['required']
+kw = {}
+for k, v in req.items():
+    cfg = v[1] if isinstance(v, tuple) and len(v) > 1 and isinstance(v[1], dict) else {}
+    if 'default' in cfg: kw[k] = cfg['default']
+    elif isinstance(v[0], list): kw[k] = v[0][0]
+    else: kw[k] = ''
+out = s.run(**kw)
+print(list(zip(s.RETURN_NAMES, [len(x) for x in out])))
+"
 ```
 
-## Data sync
+## 边界
 
-Brick catalog is shared with `../web-app/data.js`. Prefer:
-
-```bash
-python3 sync_from_data_js.py   # reads ../web-app/data.js → prompt_data.json
-```
-
-Do not hand-edit two copies of pose/scene lists.
-
-
-## v1.3 数据
-
-`prompt_data.json` 已含 `darkActs` 重口味积木；用 `sync_from_data_js.py` 从 `web-app/data.js` 同步。Action Timeline 的 category 可为 `darkActs`。
+仅 **21+** 虚构成人。允许成人间 CNC/强制等**虚构暗黑幻想**；禁止未成年、年龄模糊、真实名人、虐杀、兽交。只产出提示词文本。

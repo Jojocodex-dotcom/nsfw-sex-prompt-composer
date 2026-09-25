@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 1.4.0 — 2026-09-25
+
+### ComfyUI 重设计（更少节点、打开即懂）
+- **仅保留 2 个节点**：`NSFW H3 导演台`（`NSFWDirectorStudio`）+ `NSFW 积木目录`（`NSFWBrickCatalog`）。
+- 移除旧三节点（LM List / Timeline Builder / Prompt Composer）的注册；能力并入导演台。
+- 导演台顶部 `howto` 默认填中文分步用法；下拉用 `中文标签 | id`，动作扁平为 `[类别] 标签 | cat/id`，**基础用法无需 JSON**。
+- 支持 `manual_beats` 与 `story_local`（移植网页 `arrangeFromStory` 关键词→积木→时间轴）。
+- H3 `pack_h3_jobs`：总时长 >15s 自动拆条，输出 `h3_jobs_text` + `job1/2/3_prompt`。
+- `compose_prompt` 纳入 `darkActs`；可选 `ai_polish`（OpenAI 兼容 `/v1/chat/completions`）。
+- 新增 `logic.py`（无 ComfyUI 可测）；示例工作流 `example_workflows/NSFW_H3_导演台_一键.json`。
+
 ## 1.3.0 — 2026-09-25
 
 ### 重口味积木

@@ -265,15 +265,39 @@
     return `Chapter/plot:\n${chapter}\n\nTarget total seconds: ${targetSeconds}\nEdit mode: ${editMode}\nReturn JSON arrangement now.`;
   }
 
-  function buildPolishSystemPrompt() {
-    return [
-      "You polish NSFW video generation prompts for MiniMax H3 / Hailuo.",
-      "Keep ALL factual beats, durations, job boundaries, identities, and 21+ / CNC adult fantasy wording if present.",
-      "Improve cinematic motion, camera continuity, contact points, wetness, breath/soundscape for H3.",
+  function buildPolishSystemPrompt(opts) {
+    opts = opts || {};
+    const isH3 = opts.model === "minimax_h3" || !opts.model;
+    const isLtx = opts.model === "ltx_2_5";
+    const isRef = opts.mode === "multiref";
+    const lines = [
+      isLtx
+        ? "You polish NSFW long-video prompts for LTX 2.5."
+        : "You polish NSFW video generation prompts for MiniMax H3 / Hailuo / Qwen / LTX.",
+      "Keep ALL factual beats, durations, identities, and 21+ / CNC adult fantasy wording if present.",
+      "Improve cinematic motion, camera continuity, contact points, wetness, breath/soundscape.",
       "Never invent minors, real celebrities, snuff, or bestiality.",
       "Output plain prompt text only (no markdown fences, no commentary).",
       "If bilingual EN/ZH sections exist, keep both improved."
-    ].join("\n");
+    ];
+    if (isLtx) {
+      lines.push(
+        "CRITICAL: Preserve exactly one prompt group with [GLOBAL] then [SHOT n | MM:SS–MM:SS] markers.",
+        "Timestamps must abut with no overlap and no gaps. One primary action + one camera per SHOT.",
+        "Do NOT emit MiniMax H3 field names (integrated_multimodal_description, overall_soundscape, non_diegetic_music, subject_definitions, etc.).",
+        "Do NOT split into multiple H3 JOB segments. Polish cinematic wording inside the existing structure only."
+      );
+    } else if (isH3) {
+      lines.push(
+        "CRITICAL: Preserve official MiniMax H3 shell field names and order exactly.",
+        isRef
+          ? "Ref2VA (multi-ref) six fields: subject_definitions, summary, retention_analysis, detailed_description (+ [Shot N] lines), overall_soundscape, non_diegetic_music. Do NOT emit integrated_multimodal_description."
+          : "FL2VA/I2VA three fields: integrated_multimodal_description (+ [Shot N] lines), overall_soundscape, non_diegetic_music.",
+        "Shot 1 must NOT include At timecode. Later shots keep At MM:SS.mmm cumulative timecodes.",
+        "overall_soundscape must NOT repeat dialogue lines. non_diegetic_music is usually N/A for intimate scenes."
+      );
+    }
+    return lines.join("\n");
   }
 
   async function callChatCompletions({ baseUrl, apiKey, model, system, user, temperature }) {

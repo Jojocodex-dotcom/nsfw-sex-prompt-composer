@@ -63,6 +63,10 @@
     editMode: "continuous",
     aiPolish: false,
     polishedText: "",
+    polishedJobs: [],
+    polishError: "",
+    polishFingerprint: "",
+    showPolishedInPreview: true,
     timeline: [],
     selected: {
       subjects: [],
@@ -285,6 +289,7 @@
     if (state.mode === "multiref") list = list.concat(n.multiref);
     if (state.model === "qwen_image") list = list.concat(n.qwen);
     if (state.model === "minimax_h3") list = list.concat(n.h3);
+    if (state.model === "ltx_2_5") list = list.concat(n.ltx || []);
     if (state.timeline.length >= 2) {
       if (state.editMode === "continuous") {
         list = list.concat([
@@ -297,6 +302,471 @@
       }
     }
     return list.join(", ");
+  }
+
+  function formatH3Timecode(sec) {
+    const s = Math.max(0, Number(sec) || 0);
+    const whole = Math.floor(s + 1e-9);
+    const frac = Math.round((s - whole) * 1000);
+    const mins = Math.floor(whole / 60);
+    const secs = whole % 60;
+    return (
+      String(mins).padStart(2, "0") +
+      ":" +
+      String(secs).padStart(2, "0") +
+      "." +
+      String(Math.max(0, frac)).padStart(3, "0")
+    );
+  }
+
+  function isLtxModel() {
+    return state.model === "ltx_2_5";
+  }
+
+  function isH3Model() {
+    return state.model === "minimax_h3";
+  }
+
+  /** MM:SS clock for LTX SHOT ranges (integer seconds). */
+  function formatLtxClock(sec) {
+    const s = Math.max(0, Math.round(Number(sec) || 0));
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+  }
+
+  /**
+   * LTX 2.5 long-video: ONE prompt group with abutting timed SHOTs.
+   * Format:
+   *   [GLOBAL] scene + 21+ identity lock + light/sound
+   *   [SHOT n | MM:SS–MM:SS] one primary action + one camera
+   */
+
+  /** REF mode: SHOT bodies use Image 1 / Image 2 (A≈woman, B≈man). Never man/woman/he/she. */
+  function rewriteRefActors(text, lang) {
+    if (!text || state.mode !== "multiref") return text;
+    let s = String(text);
+    if (lang === "zh") {
+      const reps = [
+        [/一名成年女性与一名成年男性/g, "Image 1 与 Image 2"],
+        [/一名成年男性与一名成年女性/g, "Image 2 与 Image 1"],
+        [/成年女性与成年男性/g, "Image 1 与 Image 2"],
+        [/两名明显21岁以上成年伴侣/g, "Image 1 与 Image 2（均21+）"],
+        [/一成年女性/g, "Image 1"],
+        [/一成年男性/g, "Image 2"],
+        [/女上位/g, "Image 1 上位"],
+        [/男上位/g, "Image 2 上位"],
+        [/成年女性/g, "Image 1"],
+        [/成年男性/g, "Image 2"],
+        [/女性/g, "Image 1"],
+        [/男性/g, "Image 2"],
+        [/女人/g, "Image 1"],
+        [/男人/g, "Image 2"],
+        [/她的/g, "Image 1 的"],
+        [/他的/g, "Image 2 的"],
+        [/她们/g, "Image 1"],
+        [/他们/g, "Image 2"],
+        [/她/g, "Image 1"],
+        [/他/g, "Image 2"]
+      ];
+      for (const [re, to] of reps) s = s.replace(re, to);
+      return s;
+    }
+    const repsEn = [
+      [/\bone adult man and one adult woman\b/gi, "Image 2 and Image 1"],
+      [/\bone adult woman and one adult man\b/gi, "Image 1 and Image 2"],
+      [/\btwo clearly adult partners(?:\s*21\+)?\b/gi, "Image 1 and Image 2"],
+      [/\bone adult woman\b/gi, "Image 1"],
+      [/\bone adult man\b/gi, "Image 2"],
+      [/\ban adult woman\b/gi, "Image 1"],
+      [/\ban adult man\b/gi, "Image 2"],
+      [/\bthe adult woman\b/gi, "Image 1"],
+      [/\bthe adult man\b/gi, "Image 2"],
+      [/\bthe woman\b/gi, "Image 1"],
+      [/\bthe man\b/gi, "Image 2"],
+      [/\badult women\b/gi, "Image 1"],
+      [/\badult men\b/gi, "Image 2"],
+      [/\bwomen\b/gi, "Image 1"],
+      [/\bmen\b/gi, "Image 2"],
+      [/\bwoman\b/gi, "Image 1"],
+      [/\bman\b/gi, "Image 2"],
+      [/\bshe\b/gi, "Image 1"],
+      [/\bher\b/gi, "Image 1's"],
+      [/\bhers\b/gi, "Image 1's"],
+      [/\bhe\b/gi, "Image 2"],
+      [/\bhim\b/gi, "Image 2"],
+      [/\bhis\b/gi, "Image 2's"]
+    ];
+    for (const [re, to] of repsEn) s = s.replace(re, to);
+    s = s.replace(/Image 1's's/g, "Image 1's").replace(/Image 2's's/g, "Image 2's");
+    return s;
+  }
+
+  function buildLtxPromptGroup() {
+    const prefer = state.lang === "en" ? "en" : state.lang === "zh" ? "zh" : "both";
+    const segs = resolveSegments();
+    const subjects = selectedItems("subjects");
+    const body = selectedItems("bodyTags");
+    const scenes = selectedItems("scenes");
+    const ward = selectedItems("wardrobe");
+    const cams = selectedItems("cameras");
+    const exprs = selectedItems("expressions");
+    const rhythm = selectedItems("rhythm");
+    const arcs = selectedItems("arcs");
+    const dial = selectedItems("dialogueSnippets");
+
+    const sceneEn = frag(scenes, "en") || "intimate indoor room, soft practical light";
+    const sceneZh = frag(scenes, "zh") || "私密室内，柔和实景光";
+    const subjEn = frag(subjects, "en") || "two clearly adult partners 21+";
+    const subjZh = frag(subjects, "zh") || "两名明显21岁以上成年伴侣";
+    const bodyEn = frag(body, "en");
+    const bodyZh = frag(body, "zh");
+    const wardEn = frag(ward, "en") || "current wardrobe state from reference";
+    const wardZh = frag(ward, "zh") || "保持参考图服装状态";
+    const exprEn = frag(exprs, "en");
+    const exprZh = frag(exprs, "zh");
+    const rhythmEn = frag(rhythm, "en");
+    const rhythmZh = frag(rhythm, "zh");
+    const arcEn = frag(arcs, "en");
+    const arcZh = frag(arcs, "zh");
+
+    const idLockEn =
+      state.mode === "i2v"
+        ? "21+ identity lock from input frame — do not restate faces; preserve adult anatomy, contact points, wardrobe, lighting"
+        : "21+ identity lock across subject refs — no identity swap; pose ref transfers pose only";
+    const idLockZh =
+      state.mode === "i2v"
+        ? "21+身份锁定自输入帧——勿复述面部；保持成人体态、接触点、服装与光照"
+        : "21+身份锁定参考主体——禁止换脸；姿势参考只迁移姿势";
+
+    const lightSoundEn =
+      "Light/sound: soft practicals + intimate room tone; wet skin contact; synced breaths/moans; fabric rustle" +
+      (exprEn ? "; cues: " + exprEn : "");
+    const lightSoundZh =
+      "光影声景：柔和实景光 + 私密室内底噪；肌肤接触；同步喘息/轻吟；布料摩擦" +
+      (exprZh ? "；暗示：" + exprZh : "");
+
+    function trimTrail(s) {
+      return String(s || "").replace(/[.。；;\s]+$/g, "");
+    }
+
+    function globalLine(lang) {
+      if (lang === "zh") {
+        const bits = [
+          sceneZh,
+          state.mode === "multiref"
+            ? "REF锁定：Image 1=主体A（通常女）身份/外貌完全保留；Image 2=主体B（通常男）身份/外貌完全保留。各 SHOT 只写 Image 1 / Image 2，禁止写男人/女人/他/她。"
+            : "主体：" + subjZh + (bodyZh ? "；体型：" + bodyZh : ""),
+          idLockZh,
+          "服装：" + wardZh
+        ];
+        if (arcZh) bits.push("叙事弧：" + arcZh);
+        if (rhythmZh) bits.push("节奏：" + rhythmZh);
+        bits.push(lightSoundZh);
+        return "[GLOBAL] " + bits.map(trimTrail).filter(Boolean).join("。") + "。";
+      }
+      const bits = [
+        sceneEn,
+        state.mode === "multiref"
+          ? "REF lock: Image 1 = adult partner A (usually woman) identity/face/body exact; Image 2 = adult partner B (usually man) identity/face/body exact. In every SHOT name them only as Image 1 / Image 2 — never man/woman/he/she."
+          : "Subjects: " + subjEn + (bodyEn ? "; body: " + bodyEn : ""),
+        idLockEn,
+        "Wardrobe: " + wardEn
+      ];
+      if (arcEn) bits.push("Arc: " + arcEn);
+      if (rhythmEn) bits.push("Rhythm: " + rhythmEn);
+      bits.push(lightSoundEn);
+      return "[GLOBAL] " + bits.map(trimTrail).filter(Boolean).join(". ") + ".";
+    }
+
+    function oneCamera(i) {
+      if (!cams.length) {
+        return {
+          en: state.editMode === "continuous" ? "slow continuous dolly, one primary move" : "motivated medium shot, one camera",
+          zh: state.editMode === "continuous" ? "缓慢连续推轨，单一主运镜" : "有动机中景，单一镜头"
+        };
+      }
+      const cam = cams[i % cams.length];
+      return { en: cam.en || cam.label, zh: cam.zh || cam.label || cam.en };
+    }
+
+    function shotLine(n, start, end, seg, cam, lang) {
+      const range = formatLtxClock(start) + "–" + formatLtxClock(end);
+      let actionEn = seg.en || seg.label || "intimate adult motion";
+      let actionZh = seg.zh || seg.label || seg.en || "亲密成人动作";
+      if (state.mode === "multiref") {
+        actionEn = rewriteRefActors(actionEn, "en");
+        actionZh = rewriteRefActors(actionZh, "zh");
+      }
+      const linkEn =
+        state.editMode === "continuous"
+          ? "continuous soft morph; same faces wardrobe contact"
+          : "match-cut / raccord continuity; same faces wardrobe contact";
+      const linkZh =
+        state.editMode === "continuous"
+          ? "一镜到底柔和 morph；同一张脸、服装与接触点"
+          : "match cut / raccord 连贯；同一张脸、服装与接触点";
+      if (lang === "zh") {
+        return (
+          "[SHOT " +
+          n +
+          " | " +
+          range +
+          "] " +
+          actionZh +
+          "；运镜：" +
+          cam.zh +
+          "；" +
+          linkZh +
+          "。"
+        );
+      }
+      return (
+        "[SHOT " +
+        n +
+        " | " +
+        range +
+        "] " +
+        actionEn +
+        "; camera: " +
+        cam.en +
+        "; " +
+        linkEn +
+        "."
+      );
+    }
+
+    const linesEn = [globalLine("en")];
+    const linesZh = [globalLine("zh")];
+    let t = 0;
+    if (!segs.length) {
+      const cam = oneCamera(0);
+      const dummy = {
+        en: "continuous intimate adult motion, preserve identity and contact points, 21+",
+        zh: "连续亲密成人动作，保持身份与接触点，21+",
+        label: "fallback"
+      };
+      linesEn.push(shotLine(1, 0, 8, dummy, cam, "en"));
+      linesZh.push(shotLine(1, 0, 8, dummy, cam, "zh"));
+    } else {
+      segs.forEach((seg, i) => {
+        const start = t;
+        const end = t + (Number(seg.seconds) || 0);
+        t = end;
+        const cam = oneCamera(i);
+        linesEn.push(shotLine(i + 1, start, end, seg, cam, "en"));
+        linesZh.push(shotLine(i + 1, start, end, seg, cam, "zh"));
+      });
+    }
+
+    if (prefer === "en") return linesEn.join("\n");
+    if (prefer === "zh") return linesZh.join("\n");
+    // bilingual: EN block then ZH block
+    return "【EN】\n" + linesEn.join("\n") + "\n\n【ZH】\n" + linesZh.join("\n");
+  }
+
+  function selectedItems(key) {
+    const mod = MODULES.find((m) => m.key === key);
+    return mod ? pick(mod.data, state.selected[key] || []) : [];
+  }
+
+  function pickLangText(item, prefer) {
+    if (!item) return "";
+    if (prefer === "zh") return item.zh || item.label || item.en || "";
+    if (prefer === "en") return item.en || item.label || item.zh || "";
+    return item.zh || item.en || item.label || "";
+  }
+
+  function joinItems(items, prefer, sep) {
+    return items.map((it) => pickLangText(it, prefer)).filter(Boolean).join(sep || "；");
+  }
+
+  function fingerprintPromptInputs() {
+    return JSON.stringify({
+      model: state.model,
+      mode: state.mode,
+      lang: state.lang,
+      editMode: state.editMode,
+      selected: state.selected,
+      timeline: state.timeline.map((s) => ({
+        category: s.category,
+        actionId: s.actionId,
+        seconds: s.seconds
+      }))
+    });
+  }
+
+  function invalidatePolish(reason) {
+    state.polishedText = "";
+    state.polishedJobs = [];
+    state.polishError = reason ? String(reason) : "";
+    state.polishFingerprint = "";
+  }
+
+  /** Official MiniMax H3 FL2VA/I2VA (3-field) or Ref2VA (6-field) shell for one ≤15s job. */
+  function buildH3OfficialShell(job, ji, jobsLen) {
+    const prefer = state.lang === "en" ? "en" : "zh";
+    const subjects = selectedItems("subjects");
+    const body = selectedItems("bodyTags");
+    const scenes = selectedItems("scenes");
+    const ward = selectedItems("wardrobe");
+    const cams = selectedItems("cameras");
+    const exprs = selectedItems("expressions");
+    const rhythm = selectedItems("rhythm");
+    const arcs = selectedItems("arcs");
+    const dial = selectedItems("dialogueSnippets");
+    const beats = (job && job.beats) || [];
+
+    const sceneTxt = joinItems(scenes, prefer) || (prefer === "en" ? "intimate indoor room, soft practical light" : "私密室内，柔和实景光");
+    const subjTxt = joinItems(subjects, prefer) || (prefer === "en" ? "two clearly adult partners 21+" : "两名明显21岁以上成年伴侣");
+    const bodyTxt = joinItems(body, prefer);
+    const wardTxt = joinItems(ward, prefer) || (prefer === "en" ? "current wardrobe state from reference" : "保持参考图服装状态");
+    const camTxt = joinItems(cams, prefer);
+    const exprTxt = joinItems(exprs, prefer);
+    const rhythmTxt = joinItems(rhythm, prefer);
+    const arcTxt = joinItems(arcs, prefer);
+
+    const setupParts = [];
+    if (prefer === "en") {
+      setupParts.push(sceneTxt + ".");
+      setupParts.push(
+        state.mode === "i2v"
+          ? "Subjects: " + subjTxt + (bodyTxt ? "; body: " + bodyTxt : "") + " — roles and motion only; do not restate faces from the reference frame. Age 21+."
+          : "Subjects: " + subjTxt + (bodyTxt ? "; body: " + bodyTxt : "") + ". Age 21+ fictional adults."
+      );
+      setupParts.push("Wardrobe state: " + wardTxt + ".");
+      if (arcTxt) setupParts.push("Arc: " + arcTxt + ".");
+      if (rhythmTxt) setupParts.push("Rhythm: " + rhythmTxt + ".");
+      if (camTxt) setupParts.push("Primary camera: " + camTxt + ". Prefer one continuous camera move.");
+      if (exprTxt) setupParts.push("Expression/breath cues: " + exprTxt + ".");
+    } else {
+      setupParts.push(sceneTxt + "。");
+      setupParts.push(
+        state.mode === "i2v"
+          ? "主体：" + subjTxt + (bodyTxt ? "；体型：" + bodyTxt : "") + "——只写角色与动作，勿复述参考图面部外貌。年龄21+。"
+          : "主体：" + subjTxt + (bodyTxt ? "；体型：" + bodyTxt : "") + "。虚构成人21+。"
+      );
+      setupParts.push("服装状态：" + wardTxt + "。");
+      if (arcTxt) setupParts.push("叙事弧：" + arcTxt + "。");
+      if (rhythmTxt) setupParts.push("节奏：" + rhythmTxt + "。");
+      if (camTxt) setupParts.push("主运镜：" + camTxt + "。优先单一连续运镜。");
+      if (exprTxt) setupParts.push("表情/喘息：" + exprTxt + "。");
+    }
+    const setup = setupParts.join(prefer === "en" ? " " : "");
+
+    const shotLines = [];
+    let t = 0;
+    if (!beats.length) {
+      const fallback =
+        prefer === "en"
+          ? "continuous intimate adult motion, preserve identity and contact points, soft morph, 21+"
+          : "连续亲密成人动作，保持身份与接触点，柔和 morph，21+";
+      shotLines.push("[Shot 1] " + fallback);
+    } else {
+      beats.forEach((b, bi) => {
+        let action = prefer === "en" ? b.en || b.zh || b.label : b.zh || b.label || b.en;
+        if (state.mode === "multiref") {
+          action = rewriteRefActors(action, prefer === "en" ? "en" : "zh");
+          if (state.model === "minimax_h3") {
+            action = String(action).replace(/Image 1/g, "<Subject 1>").replace(/Image 2/g, "<Subject 2>");
+          }
+        }
+        const camHint =
+          state.editMode === "continuous"
+            ? prefer === "en"
+              ? "; continuous take soft morph; same faces wardrobe contact"
+              : "；一镜到底柔和 morph；同一张脸、同一服装与接触点"
+            : prefer === "en"
+              ? "; match-cut continuity; same faces wardrobe contact"
+              : "；match cut 连贯；同一张脸、同一服装与接触点";
+        const breath = exprTxt
+          ? prefer === "en"
+            ? "; " + exprTxt
+            : "；" + exprTxt
+          : "";
+        const endP = prefer === "en" ? "." : "。";
+        if (bi === 0) {
+          shotLines.push("[Shot 1] " + action + camHint + breath + endP);
+        } else {
+          shotLines.push(
+            "[Shot " +
+              (bi + 1) +
+              "] At " +
+              formatH3Timecode(t) +
+              " " +
+              action +
+              camHint +
+              breath +
+              endP
+          );
+        }
+        t += Number(b.seconds) || 0;
+      });
+    }
+
+    const sound =
+      prefer === "en"
+        ? "overall_soundscape: intimate room tone; wet skin contact; synced breaths and soft moans or muffled cries; sheets or restraint fabric — no dialogue repeat"
+        : "overall_soundscape: 私密室内底噪；肌肤接触；与动作同步的喘息/轻吟/闷叫；床单或束缚摩擦——不对白复述";
+    const music = "non_diegetic_music: N/A";
+
+    let shell = "";
+    if (state.mode === "multiref") {
+      const subj1 =
+        prefer === "en"
+          ? "<Subject 1> is adult partner A from <Picture 1>, identity fully locked, clearly 21+."
+          : "<Subject 1> is 成年伴侣A from <Picture 1>, 身份完全锁定，明显21+。";
+      const subj2 =
+        prefer === "en"
+          ? "<Subject 2> is adult partner B from <Picture 2>, identity fully locked, clearly 21+."
+          : "<Subject 2> is 成年伴侣B from <Picture 2>, 身份完全锁定，明显21+。";
+      const summary =
+        prefer === "en"
+          ? "summary: [reference generation] Intimate adult scene with <Subject 1> and <Subject 2>; pose guided by <Picture 3>; environment from <Picture 4>; style weak_reference from <Picture 5>."
+          : "summary: [reference generation] <Subject 1> 与 <Subject 2> 的亲密成人场景；姿势参考 <Picture 3>；环境参考 <Picture 4>；风格弱参考 <Picture 5>。";
+      const retention =
+        prefer === "en"
+          ? "retention_analysis: <Subject 1>/<Subject 2> fully_preserved; pose <Picture 3> attribute_transfer; scene <Picture 4> as appropriate; style <Picture 5> weak_reference"
+          : "retention_analysis: <Subject 1>/<Subject 2> fully_preserved；pose <Picture 3> attribute_transfer；scene <Picture 4> as appropriate；style <Picture 5> weak_reference";
+      shell = [
+        "subject_definitions:",
+        subj1,
+        subj2,
+        summary,
+        retention,
+        "detailed_description:",
+        setup,
+        ...shotLines,
+        sound,
+        music
+      ].join("\n");
+    } else {
+      shell = [
+        "integrated_multimodal_description:",
+        setup,
+        ...shotLines,
+        sound,
+        music
+      ].join("\n");
+    }
+
+    let chainNote =
+      ji === 0
+        ? prefer === "en"
+          ? `H3 JOB ${ji + 1}/${jobsLen} · ~${job.total || 0}s · I2V from your first frame / reference.`
+          : `H3 任务 ${ji + 1}/${jobsLen} · 约 ${job.total || 0}s · 用你的首帧/参考图做 I2V。`
+        : prefer === "en"
+          ? `H3 JOB ${ji + 1}/${jobsLen} · ~${job.total || 0}s · chain: start I2V from LAST FRAME of previous job.`
+          : `H3 任务 ${ji + 1}/${jobsLen} · 约 ${job.total || 0}s · 衔接：用上一条最后一帧做本条首帧 I2V。`;
+
+    if (dial.length) {
+      chainNote +=
+        prefer === "en"
+          ? " Optional dialogue (do not paste into soundscape): " + dial.map((d) => d.en).join(" ")
+          : " 可选对白（勿写入声景）：" + dial.map((d) => d.zh || d.en).join(" / ");
+    }
+
+    return { note: chainNote, shell };
   }
 
   /** Build shared header context (age, subjects, scene, locks) without full timeline dump. */
@@ -385,11 +855,29 @@
   /** Per-job ≤15s prompts for H3 chaining (also works as single job). */
   function buildH3JobPrompts() {
     const segs = resolveSegments();
+    const jobs = segs.length ? packH3Jobs(segs) : [{ beats: [], total: 0 }];
+    const lang = state.lang;
+
+    // MiniMax H3: each job is a complete official FL2VA / Ref2VA shell
+    if (state.model === "minimax_h3") {
+      return jobs.map((job, ji) => {
+        const { note, shell } = buildH3OfficialShell(job, ji, jobs.length);
+        return {
+          index: ji + 1,
+          totalJobs: jobs.length,
+          seconds: job.total || 0,
+          beats: job.beats,
+          note,
+          shell,
+          text: note + "\n\n" + shell
+        };
+      });
+    }
+
+    // Qwen / other: keep freeform narrative job packs
     const ctx = buildContextParts();
     const editLabelEn = state.editMode === "continuous" ? "ONE CONTINUOUS TAKE" : "MULTI-SHOT EDIT";
     const editLabelZh = state.editMode === "continuous" ? "一镜到底" : "多镜头剪辑";
-    const jobs = segs.length ? packH3Jobs(segs) : [{ beats: [], total: 0 }];
-    const lang = state.lang;
 
     return jobs.map((job, ji) => {
       const linesEn = [];
@@ -412,11 +900,11 @@
           : "用【上一条 H3 任务最后一帧】做本条首帧 I2V——保持身份、服装状态、接触点、光照。";
 
       const headEn = [
-        `MINIMAX H3 JOB ${ji + 1}/${jobs.length} — generate exactly ~${job.total || 0}s (≤${H3_MAX}s). ${chainEn}`,
+        `JOB ${ji + 1}/${jobs.length} — generate exactly ~${job.total || 0}s (≤${H3_MAX}s). ${chainEn}`,
         `Edit: ${editLabelEn}.`
       ];
       const headZh = [
-        `MINIMAX H3 任务 ${ji + 1}/${jobs.length} — 生成约 ${job.total || 0} 秒（≤${H3_MAX}s）。${chainZh}`,
+        `任务 ${ji + 1}/${jobs.length} — 生成约 ${job.total || 0} 秒（≤${H3_MAX}s）。${chainZh}`,
         `剪辑：${editLabelZh}。`
       ];
 
@@ -444,12 +932,29 @@
         totalJobs: jobs.length,
         seconds: job.total || 0,
         beats: job.beats,
+        note: "",
+        shell: text,
         text
       };
     });
   }
 
   function buildPrompt() {
+    // LTX 2.5: ONE prompt group with [GLOBAL] + timed [SHOT] — never H3 job packing / field names
+    if (isLtxModel()) {
+      return buildLtxPromptGroup();
+    }
+
+    // H3: primary copyable output = official shells (one per job), not freeform + skeleton tack-on
+    if (state.model === "minimax_h3") {
+      const jobs = buildH3JobPrompts();
+      if (!jobs.length) return "";
+      if (jobs.length === 1) return jobs[0].shell;
+      return jobs
+        .map((j) => j.note + "\n\n" + j.shell)
+        .join("\n\n----------\n\n");
+    }
+
     const s = state.selected;
     const get = (key) => pick(MODULES.find((m) => m.key === key).data, s[key]);
 
@@ -491,11 +996,7 @@
     partsEn.push(ageLine);
     partsZh.push(ageLineZh);
 
-    if (state.model === "minimax_h3") {
-      partsEn.push("Style: photorealistic cinematic adult intimacy, natural skin, continuous camera.");
-    } else {
-      partsEn.push("Detailed adult pose and scene illustration, photorealistic, precise limb placement and contact surfaces.");
-    }
+    partsEn.push("Detailed adult pose and scene illustration, photorealistic, precise limb placement and contact surfaces.");
 
     if (state.mode === "i2v") {
       partsEn.push("IMAGE-TO-VIDEO: " + locks.en);
@@ -531,7 +1032,7 @@
       if (tlBlock.en) partsEn.push(tlBlock.en);
       if (tlBlock.zh) partsZh.push(tlBlock.zh);
     } else if (actionEn) {
-      if (state.model === "minimax_h3" || state.mode === "i2v") {
+      if (state.mode === "i2v") {
         partsEn.push(
           "Beat timeline: [0–30%] " +
             (foreplay.length || oral.length ? frag([...foreplay, ...oral].slice(0, 2), "en") : "settle into position") +
@@ -565,7 +1066,7 @@
         "Camera: " +
           camEn +
           (cams.length > 1 ? ". Prefer one primary camera move; keep others subtle." : "") +
-          (state.editMode === "continuous" || state.model === "minimax_h3"
+          (state.editMode === "continuous"
             ? " Smooth continuous motion, no abrupt stepped cuts."
             : " Per-shot framing may change on match cuts; keep move motivated.")
       );
@@ -580,14 +1081,7 @@
       partsZh.push("可选对白：" + dial.map((d) => d.zh).join(" / "));
     }
 
-    if (state.model === "minimax_h3") {
-      partsEn.push(
-        "Soundscape: close intimate room tone; wet skin contact; breath and soft moans synced to motion; fabric/sheets rustle. non_diegetic_music: N/A or very low pulse."
-      );
-      partsZh.push("声景：私密室内底噪；肌肤接触；与动作同步的喘息轻吟；床单摩擦。无或极低非叙音乐。");
-    }
-
-    if (state.model === "qwen_image" && (poses.length || tlSegs.some((s) => s.category === "sexPoses"))) {
+    if (poses.length || tlSegs.some((s) => s.category === "sexPoses")) {
       partsEn.push(
         "Pose geometry (Qwen): specify support points, who is on top/bottom, limb angles, where hands grip, eye-level or low camera still-frame composition suitable as I2V first frame."
       );
@@ -598,20 +1092,6 @@
     if (lang === "en") out = partsEn.join("\n\n");
     else if (lang === "zh") out = partsZh.join("\n\n");
     else out = "【EN】\n" + partsEn.join("\n\n") + "\n\n【ZH】\n" + partsZh.join("\n\n");
-
-    if (state.mode === "multiref" && state.model === "minimax_h3") {
-      out +=
-        "\n\n---\n[MiniMax H3 R2VA field skeleton]\n" +
-        "subject_definitions:\n" +
-        "<Subject 1> is the adult partner A from <Picture 1>, identity fully locked, 21+.\n" +
-        "<Subject 2> is the adult partner B from <Picture 2>, identity fully locked, 21+.\n" +
-        (scenes.length ? "<Subject 3> is the environment from <Picture 4>, " + frag(scenes, "en") + ".\n" : "") +
-        "summary:\n[reference generation] Intimate adult scene with <Subject 1> and <Subject 2>; pose guided by <Picture 3>; environment from scene ref.\n" +
-        "retention_analysis:\n<Subject 1>: fully_preserved\n<Subject 2>: fully_preserved\n<Picture 3>: attribute_transfer - pose/contact only\n" +
-        "detailed_description:\n[Shot 1] " +
-        (tlSegs.length ? `timeline ${state.editMode}, ${tlSegs.length} beats` : actionEn || "continuous intimate motion") +
-        "\noverall_soundscape: intimate room tone, breaths, skin contact\nnon_diegetic_music: N/A";
-    }
 
     return out;
   }
@@ -667,6 +1147,7 @@
       if (i >= 0) arr.splice(i, 1);
       else arr.push(id);
     }
+    invalidatePolish();
     renderModules();
     refreshPreview();
   }
@@ -683,19 +1164,28 @@
     const segs = state.timeline;
     const total = totalSeconds(segs);
     const jobs = packH3Jobs(segs.map((s) => ({ ...s, seconds: clampSeconds(s.seconds) })));
-    const over = state.model === "minimax_h3" && total > H3_MAX;
+    const over = isH3Model() && total > H3_MAX;
     const elTotal = $("#tlTotal");
-    elTotal.textContent = over
-      ? `总时长 ${total}s · ${segs.length} 段 → 拆成 ${jobs.length} 条 H3 任务（每条 ≤${H3_MAX}s）`
-      : `总时长 ${total}s · ${segs.length} 段` + (state.model === "minimax_h3" ? `（H3 单次上限 ${H3_MAX}s）` : "");
+    if (isLtxModel()) {
+      elTotal.textContent =
+        `总时长 ${total}s · ${segs.length} 段 → LTX 单组 ${segs.length || 1} SHOT（累计时间紧挨）`;
+    } else {
+      elTotal.textContent = over
+        ? `总时长 ${total}s · ${segs.length} 段 → 拆成 ${jobs.length} 条 H3 任务（每条 ≤${H3_MAX}s）`
+        : `总时长 ${total}s · ${segs.length} 段` + (isH3Model() ? `（H3 单次上限 ${H3_MAX}s）` : "");
+    }
     elTotal.classList.toggle("tl-total-over", over);
     const warn = $("#tlWarn");
     if (warn) {
-      if (state.model === "minimax_h3" && total > H3_MAX) {
+      if (isLtxModel()) {
+        warn.hidden = false;
+        warn.textContent =
+          `当前模型 LTX 2.5：输出【一组】[GLOBAL]+[SHOT n | start–end]，时间轴秒数累计成紧挨时间码；不拆 H3 JOB，也不写官方壳字段名。`;
+      } else if (isH3Model() && total > H3_MAX) {
         warn.hidden = false;
         warn.textContent =
           `MINIMAX H3 单次只能生成约 ${H3_MAX} 秒，不能一次出 ${total}s。已按时间轴拆成 ${jobs.length} 条各自 ≤${H3_MAX}s 的提示词任务；请逐条生成并用上一段最后一帧做下一条 I2V 首帧。`;
-      } else if (state.model === "minimax_h3") {
+      } else if (isH3Model()) {
         warn.hidden = false;
         warn.textContent = `当前模型 MINIMAX H3：单次生成请把时间轴总和压在 ${H3_MAX}s 以内（常见 5 / 10 / 15s）。更长剧情请拆多条。`;
       } else {
@@ -748,12 +1238,14 @@
           } else if (field === "secondsNum") {
             seg.seconds = clampSeconds(el.value);
           }
+          invalidatePolish();
           renderTimeline();
           refreshPreview();
         });
       });
       row.querySelector('[data-act="del"]').addEventListener("click", () => {
         state.timeline = state.timeline.filter((s) => String(s.id) !== String(id));
+        invalidatePolish();
         renderTimeline();
         refreshPreview();
         toast("已删除一段");
@@ -767,6 +1259,7 @@
     const actionId = (preset && preset.actionId) || catObj.data[0].id;
     const seconds = clampSeconds((preset && preset.seconds) || 5);
     state.timeline.push({ id: segSeq++, category: catObj.key, actionId, seconds });
+    invalidatePolish();
     renderTimeline();
     refreshPreview();
   }
@@ -799,33 +1292,46 @@
   function renderJobCards() {
     const host = $("#jobPromptsHost");
     if (!host) return;
-    const jobs = buildH3JobPrompts();
-    if (!state.timeline.length) {
+    // LTX: single prompt group in main preview — hide H3 job packing UI
+    if (isLtxModel() || !state.timeline.length) {
       host.innerHTML = "";
       return;
     }
+    const jobs = buildH3JobPrompts();
+    const fpOk = state.polishFingerprint && state.polishFingerprint === fingerprintPromptInputs();
+    const hasPolish = fpOk && state.polishedJobs && state.polishedJobs.length;
     host.innerHTML =
-      `<div class="job-head"><strong>H3 分条提示词</strong><span class="count">${jobs.length} 条 · 各 ≤${H3_MAX}s</span></div>` +
+      `<div class="job-head"><strong>H3 分条提示词</strong><span class="count">${jobs.length} 条 · 各 ≤${H3_MAX}s${hasPolish ? " · 润色后" : ""}</span></div>` +
       jobs
-        .map(
-          (j, idx) => `
+        .map((j, idx) => {
+          const polished = hasPolish && state.polishedJobs[idx] ? String(state.polishedJobs[idx]).trim() : "";
+          const display = polished || (j.shell || j.text);
+          const noteHtml = j.note ? `<div class="job-note">${escapeHtml(j.note)}</div>` : "";
+          const label = polished ? " · 润色后" : state.model === "minimax_h3" ? " · 官方壳" : "";
+          return `
       <div class="job-card" data-job="${idx}">
         <div class="job-card-head">
-          <span>JOB ${j.index}/${j.totalJobs} · ${j.seconds}s</span>
+          <span>JOB ${j.index}/${j.totalJobs} · ${j.seconds}s${label}</span>
           <button type="button" class="btn ghost btn-xs" data-copy-job="${idx}">复制本条</button>
         </div>
-        <textarea readonly class="job-ta" spellcheck="false">${escapeHtml(j.text)}</textarea>
-      </div>`
-        )
+        ${noteHtml}
+        <textarea readonly class="job-ta" spellcheck="false">${escapeHtml(display)}</textarea>
+      </div>`;
+        })
         .join("");
     host.querySelectorAll("[data-copy-job]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const i = Number(btn.dataset.copyJob);
-        const t = jobs[i] && jobs[i].text;
+        const j = jobs[i];
+        if (!j) return;
+        const fpOk2 = state.polishFingerprint && state.polishFingerprint === fingerprintPromptInputs();
+        const polished = fpOk2 && state.polishedJobs && state.polishedJobs[i] ? String(state.polishedJobs[i]).trim() : "";
+        // Prefer polished shell body; else official shell (not the human note)
+        const t = polished || j.shell || j.text;
         if (!t) return;
         try {
           await navigator.clipboard.writeText(t);
-          toast("已复制 JOB " + (i + 1));
+          toast("已复制 JOB " + (i + 1) + (polished ? "（润色后）" : ""));
         } catch {
           toast("复制失败，请手动全选");
         }
@@ -849,13 +1355,67 @@
     const btnCopyRaw = $("#btnCopyRaw");
     if (btnCopy) btnCopy.textContent = state.aiPolish ? "复制润色版" : "复制提示词";
     if (btnCopyRaw) btnCopyRaw.hidden = !state.aiPolish;
+    const status = $("#polishStatus");
+    if (status) {
+      if (state.polishError) {
+        status.hidden = false;
+        status.className = "polish-status err";
+        status.textContent = "润色失败：保留原文 — " + state.polishError;
+      } else if (state.aiPolish && state.polishedText) {
+        status.hidden = false;
+        status.className = "polish-status ok";
+        status.textContent = isLtxModel()
+          ? "润色后已写入主预览（LTX 单组 GLOBAL+SHOT）"
+          : "润色后已写入下方预览与各 JOB（标签：润色后）";
+      } else if (state.aiPolish) {
+        status.hidden = false;
+        status.className = "polish-status";
+        status.textContent = "已开启 AI 润色 — 点击「重新润色」或等待自动润色…";
+      } else {
+        status.hidden = true;
+        status.textContent = "";
+      }
+    }
     const outPol = $("#outPolished");
-    if (outPol) outPol.value = state.polishedText || "";
+    if (outPol) {
+      outPol.value = state.polishedText || "";
+      outPol.classList.toggle("polished-active", !!(state.aiPolish && state.polishedText));
+    }
+    const lblPol = $("#lblPolished");
+    if (lblPol) lblPol.textContent = state.polishedText ? "AI 润色后（可复制）" : "AI 润色后";
   }
 
   function refreshPreview() {
     const direct = buildPrompt();
-    $("#outPrompt").value = direct;
+    const fp = fingerprintPromptInputs();
+    const fpOk = state.polishFingerprint && state.polishFingerprint === fp;
+    if (state.polishedText && !fpOk) {
+      // inputs changed — drop stale polish so preview never shows wrong text
+      invalidatePolish();
+    }
+    const usePolish =
+      state.aiPolish &&
+      state.showPolishedInPreview &&
+      state.polishedText &&
+      state.polishFingerprint === fingerprintPromptInputs();
+
+    const outPrompt = $("#outPrompt");
+    const lblPrompt = $("#lblPrompt");
+    if (outPrompt) {
+      outPrompt.value = usePolish ? state.polishedText : direct;
+      outPrompt.dataset.raw = direct;
+      outPrompt.classList.toggle("polished-active", !!usePolish);
+    }
+    if (lblPrompt) {
+      lblPrompt.textContent = usePolish
+        ? "主提示词 · 润色后"
+        : isLtxModel()
+          ? "直接组装提示词（LTX 单组 GLOBAL+SHOT）"
+          : state.model === "minimax_h3"
+            ? "直接组装提示词（H3 官方壳）"
+            : "直接组装提示词（原文）";
+    }
+
     $("#outNeg").value = buildNegative();
     const slotHost = $("#refSlotHost");
     if (slotHost) slotHost.innerHTML = buildRefSlotsHtml();
@@ -863,8 +1423,9 @@
     syncPolishUi();
     const editLabel = (D.meta.editModes || []).find((m) => m.id === state.editMode);
     const jobs = state.timeline.length ? packH3Jobs(resolveSegments()) : [];
+    const modelMeta = D.meta.models.find((m) => m.id === state.model);
     $("#metaLine").textContent =
-      D.meta.models.find((m) => m.id === state.model).label +
+      (modelMeta ? modelMeta.label : state.model) +
       " · " +
       D.meta.modes.find((m) => m.id === state.mode).label +
       " · " +
@@ -873,13 +1434,19 @@
       ({ en: "英文", zh: "中文", both: "中英双语" }[state.lang]) +
       (state.timeline.length
         ? ` · 时间轴 ${state.timeline.length} 段 / ${totalSeconds(state.timeline)}s` +
-          (state.model === "minimax_h3" && jobs.length ? ` · H3×${jobs.length}` : "")
+          (isLtxModel()
+            ? ` · LTX×1组/${state.timeline.length}SHOT`
+            : isH3Model() && jobs.length
+              ? ` · H3×${jobs.length}`
+              : "")
         : "") +
-      (state.aiPolish ? " · AI润色ON" : " · 直接组装");
+      (state.aiPolish ? (usePolish ? " · AI润色已显示" : " · AI润色ON") : " · 直接组装");
+    syncModelChrome();
   }
 
   function clearAll() {
     Object.keys(state.selected).forEach((k) => (state.selected[k] = []));
+    invalidatePolish();
     renderModules();
     refreshPreview();
     toast("已清空积木选择");
@@ -913,18 +1480,19 @@
   }
 
   async function copyText(which) {
-    let el;
-    if (which === "neg") el = $("#outNeg");
-    else if (which === "raw") el = $("#outPrompt");
-    else if (which === "polish") el = $("#outPolished");
-    else el = state.aiPolish && $("#outPolished") && $("#outPolished").value.trim()
-      ? $("#outPolished")
-      : $("#outPrompt");
-    const text = el ? el.value : "";
+    let text = "";
+    const raw = ($("#outPrompt") && $("#outPrompt").dataset.raw) || ($("#outPrompt") && $("#outPrompt").value) || buildPrompt();
+    const fpOk = state.polishFingerprint && state.polishFingerprint === fingerprintPromptInputs();
+    const polished = fpOk && state.polishedText ? state.polishedText : "";
+    if (which === "neg") text = ($("#outNeg") && $("#outNeg").value) || "";
+    else if (which === "raw") text = raw;
+    else if (which === "polish") text = polished || (($("#outPolished") && $("#outPolished").value) || "");
+    else text = state.aiPolish && polished ? polished : (($("#outPrompt") && $("#outPrompt").value) || raw);
     try {
       await navigator.clipboard.writeText(text);
-      toast(which === "neg" ? "已复制负面" : which === "raw" ? "已复制原文" : state.aiPolish && which !== "raw" ? "已复制润色版" : "已复制到剪贴板");
+      toast(which === "neg" ? "已复制负面" : which === "raw" ? "已复制原文" : state.aiPolish && which !== "raw" && polished ? "已复制润色版" : "已复制到剪贴板");
     } catch {
+      const el = which === "neg" ? $("#outNeg") : which === "raw" ? null : $("#outPolished") || $("#outPrompt");
       if (el) {
         el.select();
         document.execCommand("copy");
@@ -936,27 +1504,44 @@
   async function runAiPolish() {
     const Dir = window.NSFWDirector;
     if (!Dir) {
-      toast("director.js 未加载");
+      state.polishError = "director.js 未加载";
+      syncPolishUi();
+      toast(state.polishError);
       return;
     }
     const cfg = Dir.loadSettings();
     if (!cfg.apiKey) {
-      toast("未配置 API Key — 仍显示直接组装稿");
+      state.polishError = "未配置 API Key — 仍显示直接组装稿";
+      syncPolishUi();
+      toast(state.polishError);
       return;
     }
-    const jobs = buildH3JobPrompts();
-    const system = Dir.buildPolishSystemPrompt();
+    const system = Dir.buildPolishSystemPrompt({
+      model: state.model,
+      mode: state.mode
+    });
     const btn = $("#btnRunPolish");
     if (btn) {
       btn.disabled = true;
       btn.textContent = "润色中…";
     }
+    state.polishError = "";
+    syncPolishUi();
+    const fpAtStart = fingerprintPromptInputs();
     try {
-      const polishedParts = [];
-      for (let i = 0; i < jobs.length; i++) {
+      let polishedParts = [];
+      let jobs = [];
+
+      if (isLtxModel()) {
+        // LTX: polish the whole single [GLOBAL]+[SHOT…] group once
+        const group = buildPrompt();
         const user =
-          "Polish the following H3 job prompt (" + (i + 1) + "/" + jobs.length + ", " + jobs[i].seconds + "s). Keep job boundary and all beats.\n\n" +
-          jobs[i].text;
+          "Polish the following LTX 2.5 long-video prompt group. " +
+          "Keep exactly one group: [GLOBAL] then [SHOT n | MM:SS–MM:SS] with abutting timestamps (no overlap/gaps). " +
+          "One primary action + one camera per SHOT. " +
+          "Do NOT emit MiniMax H3 field names. Do NOT split into multiple JOB segments. " +
+          "Improve cinematic wording only. Output the prompt group only — no markdown fences, no commentary.\n\n" +
+          group;
         const out = await Dir.callChatCompletions({
           baseUrl: cfg.apiBase || "https://api.openai.com/v1",
           apiKey: cfg.apiKey,
@@ -965,17 +1550,79 @@
           user,
           temperature: 0.35
         });
-        polishedParts.push(
-          (jobs.length > 1 ? ("===== POLISHED JOB " + (i + 1) + "/" + jobs.length + " (" + jobs[i].seconds + "s) =====\n") : "") +
-            String(out).trim()
-        );
+        polishedParts = [String(out).trim()];
+      } else {
+        jobs = buildH3JobPrompts();
+        for (let i = 0; i < jobs.length; i++) {
+          const shellBody = jobs[i].shell || jobs[i].text;
+          const user =
+            state.model === "minimax_h3"
+              ? (
+                  "Polish the following MiniMax H3 official prompt shell (" +
+                  (i + 1) +
+                  "/" +
+                  jobs.length +
+                  ", " +
+                  jobs[i].seconds +
+                  "s). Keep ALL field names and structure exactly. " +
+                  (state.mode === "multiref"
+                    ? "Keep the six Ref2VA fields (subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music). Do NOT use integrated_multimodal_description."
+                    : "Keep the three FL2VA/I2VA fields (integrated_multimodal_description / overall_soundscape / non_diegetic_music).") +
+                  " Keep [Shot N] markers; Shot 1 must NOT have At timecode; later shots keep At MM:SS.mmm. Improve cinematic wording only. Output the shell fields only — no markdown fences, no commentary.\n\n" +
+                  shellBody
+                )
+              : (
+                  "Polish the following job prompt (" +
+                  (i + 1) +
+                  "/" +
+                  jobs.length +
+                  ", " +
+                  jobs[i].seconds +
+                  "s). Keep job boundary and all beats.\n\n" +
+                  shellBody
+                );
+          const out = await Dir.callChatCompletions({
+            baseUrl: cfg.apiBase || "https://api.openai.com/v1",
+            apiKey: cfg.apiKey,
+            model: cfg.model || "gpt-4o-mini",
+            system,
+            user,
+            temperature: 0.35
+          });
+          polishedParts.push(String(out).trim());
+        }
       }
-      state.polishedText = polishedParts.join("\n\n");
-      syncPolishUi();
-      toast("AI 润色完成");
+      // If user changed inputs mid-flight, discard
+      if (fingerprintPromptInputs() !== fpAtStart) {
+        state.polishError = "输入已变更，本次润色已丢弃";
+        syncPolishUi();
+        toast(state.polishError);
+        return;
+      }
+      state.polishedJobs = isLtxModel() ? [] : polishedParts.slice();
+      state.polishedText =
+        isLtxModel() || polishedParts.length === 1
+          ? polishedParts[0]
+          : polishedParts
+              .map((p, i) => {
+                const head =
+                  jobs.length > 1
+                    ? (jobs[i].note ? jobs[i].note + "\n\n" : "===== POLISHED JOB " + (i + 1) + "/" + jobs.length + " =====\n")
+                    : "";
+                return head + p;
+              })
+              .join("\n\n----------\n\n");
+      state.polishFingerprint = fpAtStart;
+      state.polishError = "";
+      state.showPolishedInPreview = true;
+      refreshPreview();
+      toast("AI 润色完成 — 已显示润色后");
     } catch (err) {
       console.error(err);
-      toast("润色失败：保留原文 — " + (err && err.message ? err.message.slice(0, 80) : "error"));
+      state.polishError = err && err.message ? err.message.slice(0, 120) : "error";
+      // keep any previous polish if fingerprint still matches; else raw stays
+      syncPolishUi();
+      toast("润色失败：保留原文 — " + state.polishError);
     } finally {
       if (btn) {
         btn.disabled = false;
@@ -1019,7 +1666,7 @@
         });
       });
     }
-    state.polishedText = "";
+    invalidatePolish();
     renderModules();
     renderTimeline();
     refreshPreview();
@@ -1221,7 +1868,8 @@
       selection: { ...state.selected },
       timeline: state.timeline.map((s) => ({ ...s })),
       timelinePrompt: buildTimelineBlock(state.lang),
-      h3Jobs: buildH3JobPrompts().map((j) => ({ index: j.index, seconds: j.seconds, text: j.text })),
+      h3Jobs: isLtxModel() ? null : buildH3JobPrompts().map((j) => ({ index: j.index, seconds: j.seconds, note: j.note || "", shell: j.shell || j.text, text: j.shell || j.text })),
+      ltxPromptGroup: isLtxModel() ? buildLtxPromptGroup() : null,
       aiPolish: state.aiPolish,
       polished: state.polishedText || null,
       prompt: $("#outPrompt").value,
@@ -1258,12 +1906,40 @@
     toast("已导出 " + name);
   }
 
+
+  function syncModelChrome() {
+    const mm = D.meta.models.find((m) => m.id === state.model);
+    const mh = $("#modelHint");
+    if (mh && mm) mh.textContent = mm.hint;
+    const dirCount = $("#dirCountHint");
+    if (dirCount) {
+      dirCount.textContent = isLtxModel()
+        ? "粘贴章节 → 编排 LTX 单组多 SHOT"
+        : isH3Model()
+          ? "粘贴章节 → 编排 ≤15s H3 任务"
+          : "粘贴章节 → 编排时间轴";
+    }
+    const jobHost = $("#jobPromptsHost");
+    if (jobHost && isLtxModel()) jobHost.innerHTML = "";
+    const polishHint = $("#polishHint");
+    if (polishHint) {
+      polishHint.textContent = isLtxModel()
+        ? "默认直接组装（积木+时间轴）。LTX：整组 [GLOBAL]+[SHOT] 一次润色；成功后主预览显示润色后；失败保留原文。"
+        : isH3Model()
+          ? "默认直接组装（积木+时间轴）。打开润色后对每条 H3 JOB 调用兼容 API；成功后主预览与各 JOB 显示润色后；失败保留原文。"
+          : "默认直接组装（积木+时间轴）。打开润色后调用兼容 API；成功后主预览显示润色后；失败保留原文。";
+    }
+  }
+
   function bindTop() {
     $$("[data-model]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.model = btn.dataset.model;
         $$("[data-model]").forEach((b) => b.classList.toggle("active", b === btn));
-        $("#modelHint").textContent = D.meta.models.find((m) => m.id === state.model).hint;
+        const mm = D.meta.models.find((m) => m.id === state.model);
+        if (mm) $("#modelHint").textContent = mm.hint;
+        invalidatePolish();
+        syncModelChrome();
         renderTimeline();
         refreshPreview();
       });
@@ -1273,6 +1949,7 @@
         state.mode = btn.dataset.mode;
         $$("[data-mode]").forEach((b) => b.classList.toggle("active", b === btn));
         $("#modeHint").textContent = D.meta.modes.find((m) => m.id === state.mode).hint;
+        invalidatePolish();
         refreshPreview();
       });
     });
@@ -1282,11 +1959,13 @@
         $$("[data-edit]").forEach((b) => b.classList.toggle("active", b === btn));
         const em = (D.meta.editModes || []).find((m) => m.id === state.editMode);
         $("#editHint").textContent = em ? em.hint : "";
+        invalidatePolish();
         refreshPreview();
       });
     });
     $("#langSelect").addEventListener("change", (e) => {
       state.lang = e.target.value;
+      invalidatePolish();
       refreshPreview();
     });
     $("#btnCopy").addEventListener("click", () => copyText("prompt"));
@@ -1304,6 +1983,7 @@
     $("#btnSeedTl").addEventListener("click", seedTimelineFromSelection);
     $("#btnClearTl").addEventListener("click", () => {
       state.timeline = [];
+      invalidatePolish();
       renderTimeline();
       refreshPreview();
       toast("时间轴已清空");
@@ -1376,10 +2056,15 @@
 
   window.NSFWApp = {
     getState: () => state,
+    buildLtxPromptGroup,
+    isLtxModel,
+    buildPrompt,
     applyDirectorPlan,
     buildPrompt,
     buildH3JobPrompts,
+    buildH3OfficialShell,
     buildNegative,
+    invalidatePolish,
     refreshPreview,
     renderTimeline,
     renderModules,

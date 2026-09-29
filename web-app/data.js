@@ -6,10 +6,11 @@
 window.PROMPT_DATA = {
   meta: {
     title: "性爱视频提示词组合器",
-    version: "1.3.0",
+    version: "1.5.1",
     ageGate: "21+ ONLY — 虚构成人内容。允许成人(21+)间 CNC/强制/轮奸/调教/迷奸等暗黑幻想描写；禁止未成年、年龄模糊、真实人物姓名/肖像、虐杀/极端血腥、兽交。",
     models: [
-      { id: "minimax_h3", label: "MINIMAX H3（Hailuo/海螺类）", hint: "单次生成最长约 15s；偏运动/运镜/声景；I2V 少写外貌" },
+      { id: "minimax_h3", label: "MINIMAX H3（Hailuo/海螺类）", hint: "单次生成最长约 15s；官方壳可拆多条 ≤15s JOB；偏运动/运镜/声景" },
+      { id: "ltx_2_5", label: "LTX 2.5（长视频）", hint: "单提示词组多 SHOT 带累计时间码；不拆 H3 JOB；适合长视频" },
       { id: "qwen_image", label: "QWEN IMAGE 2.1", hint: "偏详细姿势/场景描写；适合定帧再 I2V" }
     ],
     modes: [
@@ -309,6 +310,9 @@ window.PROMPT_DATA = {
     ],
     h3: [
       "abrupt stepped camera", "desync audio", "frozen final seconds unnatural hold", "subject statue during camera move"
+    ],
+    ltx: [
+      "overlapping shot times", "timeline gaps", "multiple cameras in one shot", "identity drift across shots", "H3 shell field names"
     ]
   },
 

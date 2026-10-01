@@ -1,0 +1,29 @@
+提示词：Goal: Generate a 15.00-second 9:16 live-action adult video with readable physical contact, stable identity, and native dialogue audio.
+Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.
+可见表情与口型只写女子A；男子脸不出画，男台词只出画外声，禁止写男表情与男口型。
+用户介绍（必须体现）：女上位骑乘，写实成人向，动作连贯
+
+Reference map (upload order = Picture number):
+<Picture 1> = 女1：人物身份参考，锁定脸、发型、身材、肤色与服装状态。
+<Picture 2> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；锁死人物姿势。
+角色与参考对应：女1=<Picture 1>，场景1=<Picture 2>
+For the target video, at 0.00 seconds into the target video, <Picture 1> (character identity) is fully referenced for faces/bodies/clothing.
+场景必须跟 <Picture 2>：同一地点、同一建筑结构与环境光，禁止换场景。
+Describe only the change that happens after 0.00s — do not re-describe still appearance already shown in character refs; do not ignore scene refs.
+
+Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot (match <Picture 1>). Keep genital scale and junction proportions realistic and snug-fitting, matching <Picture 1> body scale; contact stays close, not cavernous. Keep the same location and ambient lighting as <Picture 2>; no set redesign, no teleport to another place. One continuous take: no hard cuts, no teleportation, no hidden transitions. Pose focus chain: 女上位骑乘.
+Intensity focus: 女人·暴力。抽插强度按时间线递进写入动作。
+情绪语气：娇喘（写入说的方式与停顿，勿念出标签）。
+性爱表情（中后段顺序）：女 媚笑勾人（第一人称不写男表情口型）。
+声音一键：湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。
+
+integrated_multimodal_description:
+[Shot 1] Live-action cinematic. Starting from <Picture 1>, 人物身份与光影锁定。场景跟 <Picture 2> 锁定。男子A第一人称俯视POV，镜头即他的眼睛；画面硬锁：绝不能出现男子A的脸/头顶/后脑；只按他眼睛能看见的来写（自己的下腹/胯/阴茎与女子身体）；只参考男人下半身形态，不锁男脸。保持男子A第一人称俯视POV，不切到第三人称机位。男子A在上方双膝跪立于女子两腿之间（男上女下）；按介绍：女上位骑乘，写实成人向，动作连贯。空间锁死：男子A仰卧在床上，女子A面对面跨坐在他腰腹上方（面向他，不要背对他叠坐朝镜头）。她用手扶阴茎抵住穴口，双手放在男子A胸口撑住，整根坐下，根部贴紧；男子A双手扶她腰侧协助坐下；镜头侧面或略俯清楚看见阴茎没入阴道；女子A髋部以更高频率用力下坐后蹭：比快速更快更重，每下撞实根部，腰胯大幅度连续运动；侧面必须清楚看见她髋部猛烈起落，禁止静帧微晃；男子A双手死扣她腰，自己髋部钉死不动；从他眼睛向下看，看得见自己跪姿的大腿与膝、下腹胯与插入处；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写；画面要点：交合处保持插入，髋部高频短行程进出必须清晰可读，不要冻住，不要占满画面。表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 说的方式：女子A因当下快感开口，情绪偏「娇喘」；娇喘断续、气声夹在字间、每半句用……停顿换气地说。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯……啊……嗯啊……</d>.
+
+[Shot 2] At 00:03.000, the shot continues without cutting. 在床上，她主动上下短行程起落，大部分保持体内，只在根部附近小幅进出，进出清晰可见，臀肉颤、乳随动作晃；双手持续按在男子A胸口撑住借力（明确放胸口，不要自然下垂）；男子A双手仍扶腰随她起落；禁止悬空阴茎、禁止男人坐在她背后；女子A腰腹连续狠砸胯，髋部下落又抬起反复；男子A双手扣腰，髋部静止当支点，镜头锁住她腰胯猛动；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写。表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯啊……啊……嗯……</d>.
+
+[Shot 3] At 00:6.000, the shot continues without cutting. 在床上，加快研磨与短行程抽送，腰画圈夹紧，交合处湿润贴合清晰、比例自然；她眼神看向他脸或偶尔瞥镜头，双手仍撑在他胸口或改扶自己大腿外侧，手位写清楚不空垂；女子A腰腹连续狠砸胯，髋部下落又抬起反复；男子A双手扣腰，髋部静止当支点，镜头锁住她腰胯猛动；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写。表情：女子A媚笑勾人：嘴角上扬媚笑，眼神勾人，故意拖长语气词吊着对方；口型自然，本段只写这一表情；男子脸不出画，禁止写男表情与口型。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 啊……嗯……啊……</d>. Final state: 人物身份不漂移，交合处仍紧密贴合、比例自然，构图稳定收住到 15.00s。
+
+overall_soundscape: 室内安静底噪持续。湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。布料与床铺轻响压在底层。
+
+non_diegetic_music: N/A

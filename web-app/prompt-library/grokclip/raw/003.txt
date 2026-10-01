@@ -1,0 +1,73 @@
+手搓短剧《第一人称逛青楼》视频用造梦ai生成和GROK生产。视频2K高清，表情，动作都无敌了。
+
+ 造梦ai：
+
+  https://reurl.cc/NOlKjk
+
+提示词是下面的这个工具生成： 
+ https://reurl.cc/GggqVp
+
+暴力口15秒：
+
+Goal: Generate a 15.00-second 9:16 live-action adult video with readable physical contact, stable identity, and native dialogue audio.
+Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.
+可见表情与口型只写女子A；男子脸不出画，男台词只出画外声，禁止写男表情与男口型。
+用户介绍（必须体现）：打桩口交，写实成人向，动作连贯
+
+Reference map (upload order = Picture number):
+<Picture 1> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；仅锁场景，不作人物身份或姿势参考。人物身份参考，锁定脸、发型、身材、肤色与服装状态。WARDROBE LOCK — NUDE: Fully nude; bare shoulders, torso, breasts, hips, buttocks and genital junction visible; skin only — no fabric, straps, towels, sheets, or translucent coverings over the body. Maintain this wardrobe state in every frame. 服装锁定—全裸：全身裸露；肩、胸、腹、臀与交合处皮肤可见；体表无衣物、绑带、毛巾、床单或半透明遮挡；全程维持该着装状态。
+角色与参考对应：女1=<Picture 2>
+场景与参考对应：场景1=<Picture 1>
+For the target video, at 0.00 seconds into the target video, <Picture 2> (character identity) is fully referenced for faces/bodies/clothing.
+场景必须跟 <Picture 1>：同一地点、同一建筑结构与环境光，禁止换场景。
+Describe only the change that happens after 0.00s — do not re-describe still appearance already shown in character refs; do not ignore scene refs.
+
+Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot (match <Picture 2>). Keep genital scale and junction proportions realistic and snug-fitting, matching <Picture 2> body scale; contact stays close, not cavernous. Keep the same location and ambient lighting as <Picture 1>; no set redesign, no teleport to another place. One continuous take: no hard cuts, no teleportation, no hidden transitions. Pose focus chain: 打桩口交.
+Clothing lock: 女1 <Picture 2> 全裸锁见上（全文见 Reference map，勿换装）。
+Intensity focus: 男人·暴力。抽插强度按时间线递进写入动作。
+声音一键：男声粗重喘息与低吼，气声换气喘息。
+
+integrated_multimodal_description:
+[Shot 1] Live-action cinematic. Starting from <Picture 2>, 人物身份与光影锁定。场景跟 <Picture 1> 锁定。第一人称俯视：清楚看见自己的阴茎插入对方口腔进出。保持男子A第一人称俯视POV，不切到第三人称机位。按介绍：打桩口交，写实成人向，动作连贯。从0.00秒起暴力髋活塞已连续开动：男子A双手从两侧死死夹住她头颅固定（她头与颈几乎不动，禁止她主动前后吞吐/软绵点头）；全靠他髋部大幅度前后打桩驱动，约每秒3–4次猛烈抽送，行程大半到整根；阴茎已在口腔内至少一半，唇箍柱身，柱身进出口腔全程看得见猛插猛抽；浅端龟头绝不退出唇外（禁止轻柔慢抽、禁止只舔、禁止龟头悬停试探、禁止空张嘴再推进、禁止舌外挡、禁止下巴搁柱、禁止只有她头轻点吞吐）；她双手扶他大腿外侧不握阴茎；男子A髋部以更高频率用力前后抽送：比快速更快更重，每下短行程撞实根部，腰胯大幅度连续推拉；侧面必须清楚看见他髋部猛烈前后运动，禁止静帧微晃；女子A双手死扶他大腿外侧，头颈被固定不主动吞吐，头被夹住只随撞击微颤；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写。表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 说的方式：男子A画外因快感出声（不见脸、不写口型），不是念稿；自然说，勿念稿；用……换气、～拖音。 the man with a low breathy voice (S2) says: <d>[Chinese] 嗯……啊……嗯啊……</d>；女子A嘴被占用保持沉默。 （画外声）。 Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。
+
+[Shot 2] At 00:05.000, same POV continuous — the shot continues without cutting. 持续暴力打桩：髋部大幅活塞不停，约3–4次/秒；反复大半到整根没入再抽到半根仍含住，浅端龟头不退出唇外；双手始终夹头固定，她不主动前后吞吐；柱身猛进出清晰可见，唾液飞溅；镜头锁住嘴与进出柱身；男子A腰腹连续狠送胯，髋部快速重顶，拍击密；女子A双手扶稳大腿，髋部基本不动，头被双手夹住承受打桩，镜头锁住他腰胯猛推；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写。表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 the man with a low breathy voice (S2) says: <d>[Chinese] 嗯啊……啊……嗯……</d>；女子A嘴被占用保持沉默。 （画外声）。 Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。
+
+[Shot 3] At 00:10.000, same POV continuous — the shot continues without cutting. 按住头更深暴力打桩：仍双手夹头固定，他髋砸入整根没入停半拍再抽到半根仍含住，立刻继续3–4次/秒猛抽；她大口喘息、唾液拉丝，他低吼再顶回嘴里继续暴力活塞（禁止放慢成温柔舔弄）；男子A腰腹连续狠送胯，髋部快速重顶，拍击密；女子A双手扶稳大腿，髋部基本不动，头被双手夹住承受打桩，镜头锁住他腰胯猛推；画面绝不能出现男子A的脸，只按他眼睛能看见的下半身与女子身体来写。表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 the man with a low breathy voice (S2) says: <d>[Chinese] 啊……嗯……啊……</d>；女子A嘴被占用保持沉默。 （画外声）。 Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。 Final state: 人物身份不漂移，交合处仍紧密贴合、比例自然，构图稳定收住到 15.00s。
+
+overall_soundscape: 室内安静底噪持续。男声粗重喘息与低吼，气声换气喘息，皮肤拍击，湿润声，床板轻响。皮肤拍击、湿润声与床板轻响压在底层。
+
+non_diegetic_music: N/A
+
+后背骑乘15秒提示词：
+
+Goal: Generate a 21.00-second 9:16 live-action adult video with readable physical contact, stable identity, and native dialogue audio.
+Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.
+表情自然；有浪叫或台词时张嘴，口型跟声音。
+用户介绍（必须体现）：女上位骑乘，写实成人向，动作连贯
+
+Reference map (upload order = Picture number):
+<Picture 1> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；人物姿势。
+<Picture 2> = 女1：人物身份参考，锁定脸、发型、身材、肤色与服装状态。WARDROBE LOCK — NUDE: Fully nude; bare shoulders, torso, breasts, hips, buttocks and genital junction visible; skin only — no fabric, straps, towels, sheets, or translucent coverings over the body. Maintain this wardrobe state in every frame. 服装锁定—全裸：全身裸露；肩、胸、腹、臀与交合处皮肤可见；体表无衣物、绑带、毛巾、床单或半透明遮挡；全程维持该着装状态。
+角色与参考对应：场景1=<Picture 1>，女1=<Picture 2>
+For the target video, at 0.00 seconds into the target video, <Picture 2> (character identity) is fully referenced for faces/bodies/clothing.
+场景必须跟 <Picture 1>：同一地点、同一建筑结构与环境光，禁止换场景。
+Describe only the change that happens after 0.00s — do not re-describe still appearance already shown in character refs; do not ignore scene refs.
+
+Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot (match <Picture 2>). Keep genital scale and junction proportions realistic and snug-fitting, matching <Picture 2> body scale; contact stays close, not cavernous. Keep the same location and ambient lighting as <Picture 1>; no set redesign, no teleport to another place. One continuous take: no hard cuts, no teleportation, no hidden transitions. Pose focus chain: 女上位骑乘.
+Clothing lock: 女1: WARDROBE LOCK — NUDE: Fully nude; bare shoulders, torso, breasts, hips, buttocks and genital junction visible; skin only — no fabric, straps, towels, sheets, or translucent coverings over the body. Maintain this wardrobe state in every frame. 服装锁定—全裸：全身裸露；肩、胸、腹、臀与交合处皮肤可见；体表无衣物、绑带、毛巾、床单或半透明遮挡；全程维持该着装状态。.
+女1 WARDROBE LOCK — NUDE: Fully nude; bare shoulders, torso, breasts, hips, buttocks and genital junction visible; skin only — no fabric, straps, towels, sheets, or translucent coverings over the body. Maintain this wardrobe state in every frame. 服装锁定—全裸：全身裸露；肩、胸、腹、臀与交合处皮肤可见；体表无衣物、绑带、毛巾、床单或半透明遮挡；全程维持该着装状态。
+Intensity focus: 女人·暴力。抽插强度按时间线递进写入动作。
+声音一键：舔弄水声，含弄吮吸声，湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。
+
+integrated_multimodal_description:
+[Shot 1] Live-action cinematic. Starting from <Picture 2>, 人物身份与光影锁定。场景跟 <Picture 1> 锁定。侧后视角，主看臀线腰窝，清楚看见阴茎从后方插入阴道进出。The camera holds a static shot。镜头保持固定机位，不推不拉不摇不环绕。按介绍：女上位骑乘，写实成人向，动作连贯。空间锁死：男子A仰卧在床上，双臂在身体两侧不扶腰；女子A面对面跨坐在他腰腹上方（面向他，不要背对他叠坐朝镜头），身体微微前倾，双手放在男子A胸口撑住。她用手扶阴茎抵住穴口后整根坐下，根部贴紧；从他胸口仰视清楚看见阴茎没入阴道；女子A髋部以更高频率用力下坐后蹭：比快速更快更重，每下撞实根部，腰胯大幅度连续运动；侧面必须清楚看见她髋部猛烈起落，禁止静帧微晃；男子A双手不扶腰，自己髋部钉死不动当支点；画面要点：交合处保持插入，髋部高频短行程进出必须清晰可读，不要冻住，不要占满画面。表情：表情自然；有声音时张嘴。 说的方式：女子A因当下快感开口，不是念稿；自然说，勿念稿；用……换气、～拖音。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯……啊……嗯啊……</d>. Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。
+
+[Shot 2] At 00:05.300, the shot continues without cutting. 在床上，她身体仍微微前倾，双手持续按在男子A胸口撑住借力（明确放胸口，不要自然下垂）；主动上下短行程起落，大部分保持体内，进出清晰可见，臀肉颤、乳随动作晃；男子A双手不扶腰、髋部可轻顶；禁止悬空阴茎、禁止男人坐在她背后、禁止跪姿俯视；女子A腰腹连续狠砸胯，髋部下落又抬起反复；男子A双手扣腰，髋部静止当支点，镜头锁住她腰胯猛动。表情：表情自然；有声音时张嘴。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯啊……啊……嗯……</d>. Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。
+
+[Shot 3] At 00:10.500, the shot continues without cutting. 在床上，加快研磨与短行程抽送，腰画圈夹紧，交合处湿润贴合清晰；她身体微微前倾，双手仍撑在他胸口，眼神低头看向镜头；男子A双手始终不扶腰；女子A腰腹连续狠砸胯，髋部下落又抬起反复；男子A双手扣腰，髋部静止当支点，镜头锁住她腰胯猛动。表情：表情自然；有声音时张嘴。 Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。
+
+[Shot 4] At 00:15.800, the shot continues without cutting. 在床上，加快研磨与短行程抽送，腰画圈夹紧，交合处湿润贴合清晰；她身体微微前倾，双手仍撑在他胸口，眼神低头看向镜头；男子A双手始终不扶腰；女子A腰腹连续狠砸胯，髋部下落又抬起反复；男子A双手扣腰，髋部静止当支点，镜头锁住她腰胯猛动。表情：表情自然；有声音时张嘴。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 哈啊……嗯……啊……</d>. Wardrobe reinforce: 女1 <Picture 2> 服装锁定—全裸。 Final state: 人物身份不漂移，交合处仍紧密贴合、比例自然，构图稳定收住到 21.00s。
+
+overall_soundscape: 室内安静底噪持续。舔弄水声，含弄吮吸声，湿润抽插声
+
+#角色扮演 #二次元 #少妇 #ai电影 #御姐 #火辣 #性感 #清純 #寫真 #古装美女 #短剧 #ai短剧 #巨乳 #母狗

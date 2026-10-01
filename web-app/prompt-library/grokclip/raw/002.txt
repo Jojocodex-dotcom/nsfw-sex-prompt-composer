@@ -1,0 +1,34 @@
+H3提示词小程序更新171版本，更新快选成片，只需要按照顺序你想要的姿势和动作，小程序会根据你选择的第一个到最后一个自动排序，还有自动语言。自动添加字幕。不管你是使用GROK，MINIMAX H3,还是其他ai工具全部通用。造梦ai的wan3.0效果也是非常好的。
+
+提示词工具：  https://reurl.cc/GggqVp
+
+造梦ai：  https://reurl.cc/NOlKjk
+
+提示词：
+Goal: Generate a 15-second 9:16 live-action adult video with readable body motion, stable identity, and native dialogue audio.
+
+Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.
+
+按勾选的性爱表情时间线演出脸部；有浪叫或台词时张嘴，口型跟声音；不要回到平静自然脸。
+
+Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot. Quality: natural skin tone, neutral undertone, accurate East Asian skin color, healthy natural complexion, color-accurate skin, not orange, not tanned yellow, not jaundiced, stable composition, sharp focus, coherent anatomy, correct proportions, consistent face, clean details, high detail, no deformation. 自然肤色，中性底色，东亚肤色准确，健康自然肤色，肤色准确，不发橙，不发黄，无黄疸感，构图稳定，焦点清晰，解剖正确，比例正确，五官一致，细节干净，高细节，无变形。 性别：一名成年女性。 Keep lighting direction and exposure stable; no flicker. One continuous take (一镜到底): no hard cuts, no teleportation, no pose jumps; each beat continues from the prior pose with a short transition. 禁止姿势瞬移、禁止站姿突然变跪姿无过渡；站→跪须经屈膝下沉、一膝再另一膝落地。 Pose focus chain (selection order, smooth transitions): 侧身站立 → 跪地 → 身体前倾 → 胸部晃动 → 托起胸部 → 缓慢扭腰. Camera: 镜头缓慢推近，镜头缓慢拉远 — camera moves must not break body-pose continuity.
+
+性爱表情：女 半眯眼（多个从起手镜、单个从第5秒起）。
+
+自定义台词：已按行序写入镜内对白（男→S2 / 女→S1）。
+
+情绪语气：女·软糯（写入说的方式与停顿，勿念出标签；按勾选顺序）。
+
+integrated_multimodal_description:
+
+[Shot 1] Live-action cinematic. 中近景。The camera slowly pushes in。镜头缓慢推近，镜头缓慢拉远。运镜只改变取景，不打断身体姿势连续性。一镜到底起手：自然站定，侧身站立，露出侧面轮廓；上身仍微前倾，双手可扶腿或身侧，双膝弯曲重心缓慢下沉，一膝先落地再另一膝着地，随后上身抬起跪直成双膝跪姿（禁止瞬间下蹲、禁止站姿瞬移成跪姿），到位后保持跪姿。表情：眼睛半眯，神情迷离。 说的方式：软糯拉长尾音、句中用……停顿、轻轻哼着软糯地说。 the woman (S1) says: <d>[Chinese] 看什么看小弟弟</d>.
+
+[Shot 2] At 00:05.000, the shot continues without cutting. 承接上一镜末姿态不停机：保持跪姿，上身向前倾近镜头（镜头向近，姿势不断）；保持跪姿，同时胸部随动作自然晃动（叠在当前姿势上，不换姿）。运镜延续（不切断姿势）：镜头缓慢推近，镜头缓慢拉远。 说的方式：软糯拉长尾音、句中用……停顿、轻轻哼着软糯地说。 the woman (S1) says: <d>[Chinese] 嗯？你怎么还在看</d>.
+
+[Shot 3] At 00:10.000, the shot continues without cutting. 承接上一镜末姿态不停机：保持跪姿，同时双手从下方托起胸部（叠在当前姿势上，不换姿）；保持跪姿，腰肢缓慢左右扭动。运镜延续（不切断姿势）：镜头缓慢推近，镜头缓慢拉远。 说的方式：软糯拉长尾音、句中用……停顿、轻轻哼着软糯地说。 the woman (S1) says: <d>[Chinese] 在看小心我用奶子夹你</d>. Final state: 人物身份不漂移，构图稳定收住到 15s。
+
+overall_soundscape: 室内安静底噪持续，轻呼吸，布料轻响，皮肤轻触声，轻喘气与气声，布料与床铺轻响压在底层。对白已在镜内 <d>，此处不重复念词
+
+non_diegetic_music: N/A
+
+#提示词 #成人提示词 #minimaxH3提示词 #提示词工具 #Grok提示词 #grok提示词工具 #GROK成人提示词

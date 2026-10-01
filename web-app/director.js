@@ -265,22 +265,24 @@
     return `Chapter/plot:\n${chapter}\n\nTarget total seconds: ${targetSeconds}\nEdit mode: ${editMode}\nReturn JSON arrangement now.`;
   }
 
-  /** House style for AI polish: rewrite selected poses into this native shell. */
+  /** House style distilled from @Grokclip public prompts (prompt-library/grokclip). */
   const POLISH_FORMAT_SPEC = [
-    "OUTPUT FORMAT (mandatory). Rewrite the assembled draft INTO this structure. Fill every slot from the SELECTED POSES and scene — do not keep a generic template.",
-    "Goal: Generate a {TOTAL}s {ASPECT} live-action adult video with readable physical contact, stable identity, and native dialogue audio. Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.",
+    "OUTPUT FORMAT (mandatory · Grokclip kernel). Rewrite the draft INTO this structure. Fill every slot from SELECTED POSES + scene — never keep freeform brick prose or a wrong pose template.",
+    "Goal: Generate a {TOTAL}-second {ASPECT} live-action adult video with readable physical contact, stable identity, and native dialogue audio.",
+    "Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.",
     "可见表情与口型只写女子A；男子脸不出画，男台词只出画外声，禁止写男表情与男口型。",
     "用户介绍（必须体现）：{POSE_LABELS}，写实成人向，动作连贯",
-    "Reference map (upload order = Picture number): <Picture 1> = 女1：人物身份参考，锁定脸、发型、身材、肤色与服装状态。 <Picture 2> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；锁死人物姿势。 角色与参考对应：女1=<Picture 1>，场景1=<Picture 2> For the target video, at 0.00 seconds into the target video, <Picture 1> (character identity) is fully referenced for faces/bodies/clothing. 场景必须跟 <Picture 2>：同一地点、同一建筑结构与环境光，禁止换场景。 Describe only the change that happens after 0.00s — do not re-describe still appearance already shown in character refs; do not ignore scene refs.",
-    "Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot (match <Picture 1>). Keep genital scale and junction proportions realistic and snug-fitting, matching <Picture 1> body scale; contact stays close, not cavernous. Keep the same location and ambient lighting as <Picture 2>; no set redesign, no teleport to another place. One continuous take: no hard cuts, no teleportation, no hidden transitions. Pose focus chain: {POSE_LABELS}. Intensity focus: 按所选节奏与时间线递进。抽插强度按时间线递进写入动作。 情绪语气：娇喘（写入说的方式与停顿，勿念出标签）。 性爱表情（中后段顺序）：女 媚笑勾人（第一人称不写男表情口型）。 声音一键：湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。",
+    "动作优先：髋部从0.00秒起已在连续抽送/耸动，不要先冻住、不要只有呼吸微晃、不要延后开动。",
+    "Reference map (upload order = Picture number): <Picture 1> = 女1：人物身份参考，锁定脸、发型、身材、肤色与服装状态（含 WARDROBE LOCK NUDE 或 CLOTHED，按草稿着装）。 <Picture 2> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；锁死人物姿势。 角色与参考对应：女1=<Picture 1>，场景1=<Picture 2>。 For the target video, at 0.00 seconds, <Picture 1> is fully referenced for faces/bodies/clothing. 场景必须跟 <Picture 2>。 Describe only the change after 0.00s — do not re-describe still appearance; do not ignore scene refs.",
+    "Consistency: same faces/body/skin/hair/clothing (match <Picture 1>); genital scale snug-fitting not cavernous; same location/light as <Picture 2>; One continuous take: no hard cuts, no teleport, no hidden transitions, no pose jumps. Pose focus chain: {POSE_LABELS}. Intensity focus: 按所选节奏时间线递进写入动作。 情绪语气：写入说的方式与停顿，勿念出标签。 性爱表情：中后段可写女表情；第一人称不写男表情口型。 声音一键：湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，气声换气喘息。",
     "integrated_multimodal_description:",
-    "[Shot 1] Live-action cinematic. Starting from <Picture 1>, 人物身份与光影锁定。场景跟 <Picture 2> 锁定。 Then ONE continuous blocking that MATCHES the selected pose geometry (who is on top, facing, hands, hips, penetration visibility). Do NOT paste a cowgirl/POV template if the selected pose is different (missionary, doggy, standing, etc.). 表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 说的方式：女子A因当下快感开口，情绪偏「娇喘」；娇喘断续、气声夹在字间、每半句用……停顿换气地说。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯……啊……嗯啊……</d>.",
-    "[Shot 2] At 00:03.000, the shot continues without cutting. Escalate the SAME selected pose (short strokes, readable contact, hands placed, no pose swap). 表情：女子表情自然；男子脸不出画。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯啊……啊……嗯……</d>.",
-    "[Shot 3] At 00:06.000 (or the real midpoint), the shot continues without cutting. Faster grind/thrust still in the SAME pose. 表情：女子A媚笑勾人：嘴角上扬媚笑，眼神勾人；口型自然；男子脸不出画，禁止写男表情与口型。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 啊……嗯……啊……</d>. Final state: 人物身份不漂移，交合处仍紧密贴合、比例自然，构图稳定收住到 {TOTAL}s。",
-    "If total duration needs more than 3 shots, add [Shot 4]+ with At MM:SS.mmm, still one continuous take, still the selected pose chain.",
-    "overall_soundscape: 室内安静底噪持续。湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。布料与床铺轻响压在底层。 Do NOT repeat the <d> dialogue lines here.",
+    "[Shot 1] Live-action cinematic. Starting from <Picture 1>, 人物身份与光影锁定。场景跟 <Picture 2> 锁定。 Blocking MUST match selected pose geometry (who on top, facing, hands, hips, penetration visibility). Do NOT paste cowgirl/POV if selected pose differs. 同一秒只一张嘴动。 表情 + 说的方式 + exact <d>[Chinese] …</d>. Wardrobe reinforce each shot.",
+    "[Shot 2] At 00:03.000 (or real beat), the shot continues without cutting. Escalate SAME pose — readable contact, hands placed, no pose swap. Dialogue in <d> only.",
+    "[Shot 3+] At later MM:SS.mmm, continuous take, same pose chain, intensity up. Mid/late may add 女媚笑勾人 if appropriate. Final state: identity stable, junction snug, hold to {TOTAL}s.",
+    "overall_soundscape: room tone + contact/bed/breath/moans; NEVER repeat <d> lines.",
     "non_diegetic_music: N/A",
-    "HARD: only speak words inside <d>. Never read pose/camera/negative text aloud. Woman A face/mouth only; man face never in frame; man voice off-screen only. Adults 21+ fictional only."
+    "Optional Negatives (visual/audio only, never spoken): no subtitles/UI/watermark; no identity drift; no extra limbs/fused genitals; no orbiting camera; no two mouths speaking; no pose teleport.",
+    "HARD: adults 21+ fictional only; only <d> is spoken; selected pose chain is law."
   ].join("\n");
 
   function buildPolishSystemPrompt(opts) {
@@ -307,7 +309,7 @@
         .replaceAll("{TOTAL}", total)
         .replaceAll("{ASPECT}", opts.aspect || "9:16");
       lines.push(
-        "CRITICAL: Discard freeform brick prose. Rewrite into the house format below.",
+        "CRITICAL: Discard freeform brick prose. Rewrite into the Grokclip-derived house format below (see prompt-library/grokclip/kernels).",
         "Bind the user's selected pose chain into 用户介绍 and Pose focus chain, and into every [Shot] blocking.",
         "Selected poses this run: " + poses + ".",
         "If the draft describes a different position than the selected poses, the output MUST follow the selected poses.",

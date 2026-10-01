@@ -1,0 +1,44 @@
+{
+  "id": "grokclip_house_v1",
+  "source": "https://x.com/Grokclip",
+  "itemCount": 16,
+  "fieldOrder": [
+    "Goal",
+    "Audio rule",
+    "faceMouthVisibility",
+    "用户介绍",
+    "动作优先",
+    "Reference map",
+    "Consistency",
+    "Clothing lock",
+    "Intensity focus",
+    "情绪语气",
+    "性爱表情",
+    "声音一键",
+    "integrated_multimodal_description",
+    "overall_soundscape",
+    "non_diegetic_music",
+    "Negatives"
+  ],
+  "defaults": {
+    "aspect": "9:16",
+    "durationSeconds": 15,
+    "nonDiegeticMusic": "N/A",
+    "audioRule": "characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.",
+    "continuousTake": true
+  },
+  "cameraPresets": [
+    "static_side_mcu",
+    "static_side_rear",
+    "fpv_man_eyes"
+  ],
+  "polishMust": [
+    "preserve selected pose chain",
+    "shot1_no_At_timecode",
+    "later_shots_At_timecode",
+    "dialogue_only_in_d_tags",
+    "soundscape_no_dialogue_repeat",
+    "wardrobe_lock_per_picture",
+    "describe_change_after_0s_only"
+  ]
+}

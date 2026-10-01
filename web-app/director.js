@@ -265,21 +265,55 @@
     return `Chapter/plot:\n${chapter}\n\nTarget total seconds: ${targetSeconds}\nEdit mode: ${editMode}\nReturn JSON arrangement now.`;
   }
 
+  /** House style for AI polish: rewrite selected poses into this native shell. */
+  const POLISH_FORMAT_SPEC = [
+    "OUTPUT FORMAT (mandatory). Rewrite the assembled draft INTO this structure. Fill every slot from the SELECTED POSES and scene — do not keep a generic template.",
+    "Goal: Generate a {TOTAL}s {ASPECT} live-action adult video with readable physical contact, stable identity, and native dialogue audio. Audio rule: characters may only speak the exact words inside <d>...</d>; never read pose, intensity, camera, or negative instructions aloud.",
+    "可见表情与口型只写女子A；男子脸不出画，男台词只出画外声，禁止写男表情与男口型。",
+    "用户介绍（必须体现）：{POSE_LABELS}，写实成人向，动作连贯",
+    "Reference map (upload order = Picture number): <Picture 1> = 女1：人物身份参考，锁定脸、发型、身材、肤色与服装状态。 <Picture 2> = 场景1：场景环境参考，锁定空间结构、陈设、材质与环境光线；锁死人物姿势。 角色与参考对应：女1=<Picture 1>，场景1=<Picture 2> For the target video, at 0.00 seconds into the target video, <Picture 1> (character identity) is fully referenced for faces/bodies/clothing. 场景必须跟 <Picture 2>：同一地点、同一建筑结构与环境光，禁止换场景。 Describe only the change that happens after 0.00s — do not re-describe still appearance already shown in character refs; do not ignore scene refs.",
+    "Consistency: Keep the same faces, body proportions, skin tone, hair, and clothing state across every shot (match <Picture 1>). Keep genital scale and junction proportions realistic and snug-fitting, matching <Picture 1> body scale; contact stays close, not cavernous. Keep the same location and ambient lighting as <Picture 2>; no set redesign, no teleport to another place. One continuous take: no hard cuts, no teleportation, no hidden transitions. Pose focus chain: {POSE_LABELS}. Intensity focus: 按所选节奏与时间线递进。抽插强度按时间线递进写入动作。 情绪语气：娇喘（写入说的方式与停顿，勿念出标签）。 性爱表情（中后段顺序）：女 媚笑勾人（第一人称不写男表情口型）。 声音一键：湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。",
+    "integrated_multimodal_description:",
+    "[Shot 1] Live-action cinematic. Starting from <Picture 1>, 人物身份与光影锁定。场景跟 <Picture 2> 锁定。 Then ONE continuous blocking that MATCHES the selected pose geometry (who is on top, facing, hands, hips, penetration visibility). Do NOT paste a cowgirl/POV template if the selected pose is different (missionary, doggy, standing, etc.). 表情：女子表情自然；男子脸不出画，禁止写男表情与口型。 说的方式：女子A因当下快感开口，情绪偏「娇喘」；娇喘断续、气声夹在字间、每半句用……停顿换气地说。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯……啊……嗯啊……</d>.",
+    "[Shot 2] At 00:03.000, the shot continues without cutting. Escalate the SAME selected pose (short strokes, readable contact, hands placed, no pose swap). 表情：女子表情自然；男子脸不出画。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 嗯啊……啊……嗯……</d>.",
+    "[Shot 3] At 00:06.000 (or the real midpoint), the shot continues without cutting. Faster grind/thrust still in the SAME pose. 表情：女子A媚笑勾人：嘴角上扬媚笑，眼神勾人；口型自然；男子脸不出画，禁止写男表情与口型。 the woman with a soft breathy voice (S1) says: <d>[Chinese] 啊……嗯……啊……</d>. Final state: 人物身份不漂移，交合处仍紧密贴合、比例自然，构图稳定收住到 {TOTAL}s。",
+    "If total duration needs more than 3 shots, add [Shot 4]+ with At MM:SS.mmm, still one continuous take, still the selected pose chain.",
+    "overall_soundscape: 室内安静底噪持续。湿润抽插声，肉体拍击声，床板轻响，女声呻吟与浪叫，断续「嗯、啊」，男声低沉呻吟，压抑「嗯…」，气声换气喘息。布料与床铺轻响压在底层。 Do NOT repeat the <d> dialogue lines here.",
+    "non_diegetic_music: N/A",
+    "HARD: only speak words inside <d>. Never read pose/camera/negative text aloud. Woman A face/mouth only; man face never in frame; man voice off-screen only. Adults 21+ fictional only."
+  ].join("\n");
+
   function buildPolishSystemPrompt(opts) {
     opts = opts || {};
     const isH3 = opts.model === "minimax_h3" || !opts.model;
     const isLtx = opts.model === "ltx_2_5";
     const isRef = opts.mode === "multiref";
+    const useHouse = !isLtx;
     const lines = [
       isLtx
         ? "You polish NSFW long-video prompts for LTX 2.5."
-        : "You polish NSFW video generation prompts for MiniMax H3 / Hailuo / Qwen / LTX.",
-      "Keep ALL factual beats, durations, identities, and 21+ / CNC adult fantasy wording if present.",
+        : "You polish NSFW video generation prompts for MiniMax H3 / Hailuo / Qwen.",
+      "Keep ALL factual beats from the SELECTED POSES (labels + geometry). Do not swap in a different sex position.",
+      "Durations, identities, and 21+ / CNC adult fantasy wording if present must stay.",
       "Improve cinematic motion, camera continuity, contact points, wetness, breath/soundscape.",
       "Never invent minors, real celebrities, snuff, or bestiality.",
-      "Output plain prompt text only (no markdown fences, no commentary).",
-      "If bilingual EN/ZH sections exist, keep both improved."
+      "Output plain prompt text only (no markdown fences, no commentary)."
     ];
+    if (useHouse) {
+      const poses = (opts.poseLabels && opts.poseLabels.length) ? opts.poseLabels.join("、") : "（按草稿主动作）";
+      const total = opts.totalSeconds ? String(opts.totalSeconds) : "15.00";
+      const spec = POLISH_FORMAT_SPEC
+        .replaceAll("{POSE_LABELS}", poses)
+        .replaceAll("{TOTAL}", total)
+        .replaceAll("{ASPECT}", opts.aspect || "9:16");
+      lines.push(
+        "CRITICAL: Discard freeform brick prose. Rewrite into the house format below.",
+        "Bind the user's selected pose chain into 用户介绍 and Pose focus chain, and into every [Shot] blocking.",
+        "Selected poses this run: " + poses + ".",
+        "If the draft describes a different position than the selected poses, the output MUST follow the selected poses.",
+        spec
+      );
+    }
     if (isLtx) {
       lines.push(
         "CRITICAL: Preserve exactly one prompt group with [GLOBAL] then [SHOT n | MM:SS–MM:SS] markers.",
@@ -287,14 +321,12 @@
         "Do NOT emit MiniMax H3 field names (integrated_multimodal_description, overall_soundscape, non_diegetic_music, subject_definitions, etc.).",
         "Do NOT split into multiple H3 JOB segments. Polish cinematic wording inside the existing structure only."
       );
-    } else if (isH3) {
+    } else if (isH3 || useHouse) {
       lines.push(
-        "CRITICAL: Preserve official MiniMax H3 shell field names and order exactly.",
-        isRef
-          ? "Ref2VA (multi-ref) six fields: subject_definitions, summary, retention_analysis, detailed_description (+ [Shot N] lines), overall_soundscape, non_diegetic_music. Do NOT emit integrated_multimodal_description."
-          : "FL2VA/I2VA three fields: integrated_multimodal_description (+ [Shot N] lines), overall_soundscape, non_diegetic_music.",
-        "Shot 1 must NOT include At timecode. Later shots keep At MM:SS.mmm cumulative timecodes.",
-        "overall_soundscape must NOT repeat dialogue lines. non_diegetic_music is usually N/A for intimate scenes."
+        "Field order is the house format: Goal, 可见表情 rule, 用户介绍, Reference map, Consistency, integrated_multimodal_description with [Shot N], overall_soundscape, non_diegetic_music.",
+        "This REPLACES older FL2VA/Ref2VA-only shells when polishing. Shot 1 has no At timecode. Later shots use At MM:SS.mmm.",
+        "overall_soundscape must NOT repeat dialogue lines. non_diegetic_music is N/A.",
+        isRef ? "Reference map stays Picture 1 = woman identity, Picture 2 = scene." : "Still write the Reference map even for I2V (Picture 1 identity, Picture 2 scene)."
       );
     }
     return lines.join("\n");
@@ -350,6 +382,7 @@
     buildDirectorSystemPrompt,
     buildDirectorUserPrompt,
     buildPolishSystemPrompt,
+    polishFormatSpec: POLISH_FORMAT_SPEC,
     callChatCompletions,
     extractJson,
     compactBrickCatalog,

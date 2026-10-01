@@ -1516,9 +1516,15 @@
       toast(state.polishError);
       return;
     }
+    const poseItems = selectedItems("sexPoses");
+    const poseLabels = poseItems.map((x) => x.label).filter(Boolean);
+    const segs = resolveSegments();
+    const totalSec = totalSeconds(segs) || (poseItems.length ? 15 : 15);
     const system = Dir.buildPolishSystemPrompt({
       model: state.model,
-      mode: state.mode
+      mode: state.mode,
+      poseLabels,
+      totalSeconds: totalSec
     });
     const btn = $("#btnRunPolish");
     if (btn) {
@@ -1555,32 +1561,23 @@
         jobs = buildH3JobPrompts();
         for (let i = 0; i < jobs.length; i++) {
           const shellBody = jobs[i].shell || jobs[i].text;
+          const poseLine = poseLabels.length ? poseLabels.join("、") : "（未选姿势，按草稿主动作）";
           const user =
-            state.model === "minimax_h3"
-              ? (
-                  "Polish the following MiniMax H3 official prompt shell (" +
-                  (i + 1) +
-                  "/" +
-                  jobs.length +
-                  ", " +
-                  jobs[i].seconds +
-                  "s). Keep ALL field names and structure exactly. " +
-                  (state.mode === "multiref"
-                    ? "Keep the six Ref2VA fields (subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music). Do NOT use integrated_multimodal_description."
-                    : "Keep the three FL2VA/I2VA fields (integrated_multimodal_description / overall_soundscape / non_diegetic_music).") +
-                  " Keep [Shot N] markers; Shot 1 must NOT have At timecode; later shots keep At MM:SS.mmm. Improve cinematic wording only. Output the shell fields only — no markdown fences, no commentary.\n\n" +
-                  shellBody
-                )
-              : (
-                  "Polish the following job prompt (" +
-                  (i + 1) +
-                  "/" +
-                  jobs.length +
-                  ", " +
-                  jobs[i].seconds +
-                  "s). Keep job boundary and all beats.\n\n" +
-                  shellBody
-                );
+            "Rewrite the following draft into the house prompt format from the system message (" +
+            (i + 1) +
+            "/" +
+            jobs.length +
+            ", " +
+            jobs[i].seconds +
+            "s, target total about " +
+            totalSec +
+            "s, 9:16). " +
+            "SELECTED POSES (must drive 用户介绍, Pose focus chain, and every Shot blocking — do not substitute a different position): " +
+            poseLine +
+            ". Shot 1 has no At timecode; later shots use At MM:SS.mmm and continue without cutting. " +
+            "Dialogue only inside <d>. Woman face/mouth only; man face out of frame. " +
+            "Output the formatted prompt only — no markdown fences, no commentary.\n\nDRAFT:\n" +
+            shellBody;
           const out = await Dir.callChatCompletions({
             baseUrl: cfg.apiBase || "https://api.openai.com/v1",
             apiKey: cfg.apiKey,

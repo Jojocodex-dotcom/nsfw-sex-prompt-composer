@@ -4,437 +4,481 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>NSFW H3 漫剧工作台 / 提示词组合器 · 21+ · v1.7.0</title>
+  <title>NSFW H3 漫剧工作台 / 提示词组合器 · 21+ · v1.8.0</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="app">
-    <div class="age-banner" id="ageBanner">⚠ 21+ ONLY</div>
-
-    <header class="hero">
-      <div>
-        <h1>性爱视频提示词组合器</h1>
-        <div class="sub">MINIMAX H3 漫剧工作台 / LTX / QWEN · 积木 · 时间轴 · 导演台 · Phase B ComfyUI 媒体队列 · <span id="stats"></span></div>
+<body data-ui-mode="bricks">
+  <div class="app-shell">
+    <header class="app-chrome">
+      <div class="chrome-brand">
+        <span class="chrome-mark" aria-hidden="true"></span>
+        <div class="chrome-titles">
+          <h1 id="appTitle">性爱视频提示词组合器</h1>
+          <p class="chrome-sub">MINIMAX H3 · LTX · QWEN · ComfyUI · <span id="stats"></span></p>
+        </div>
       </div>
-      <div class="hero-right">
+
+      <nav class="seg ui-mode-seg chrome-modes" aria-label="界面模式" title="切换积木组合器 / 漫剧工作台">
+        <button type="button" class="active" data-ui-mode="bricks">积木组合器</button>
+        <button type="button" data-ui-mode="workbench">漫剧工作台</button>
+      </nav>
+
+      <div class="chrome-tools">
+        <span class="age-pill" id="ageBanner">21+</span>
         <div class="lang-toggle">
-          <label for="langSelect">输出语言</label>
+          <label for="langSelect">语言</label>
           <select id="langSelect">
             <option value="both" selected>中英双语</option>
             <option value="en">英文为主</option>
             <option value="zh">中文为主</option>
           </select>
         </div>
-        <div class="seg ui-mode-seg" title="切换积木组合器 / 漫剧工作台">
-          <button type="button" class="active" data-ui-mode="bricks">积木组合器</button>
-          <button type="button" data-ui-mode="workbench">漫剧工作台</button>
-        </div>
+        <span class="chrome-ver" id="wbVersion">v1.8.0</span>
       </div>
     </header>
 
-    <div id="workbenchRoot" class="workbench" hidden>
-      <div class="panel wb-top">
-        <div class="timeline-head">
-          <h2>H3 漫剧工作台 · Phase B（提示词 + ComfyUI）</h2>
-          <span class="count" id="wbVersion">v1.7.0</span>
-        </div>
-        <p class="hint">一句话 → 扩写 → 资材 →（可选）资产图 → 分镜 → H3 壳 → 分镜静帧 / I2V。技能包：文戏 / 影视 / JP-AV→H3。文本走 llama.cpp；媒体走本地 ComfyUI <code>/prompt</code>。</p>
-        <nav class="wb-stages" aria-label="管线阶段">
-          <button type="button" class="wb-stage active" data-stage="S0">S0 立项锁</button>
-          <button type="button" class="wb-stage" data-stage="S1">S1 扩写</button>
-          <button type="button" class="wb-stage" data-stage="S2">S2 资材</button>
-          <button type="button" class="wb-stage" data-stage="S3">S3 资产图</button>
-          <button type="button" class="wb-stage" data-stage="S4">S4 分镜</button>
-          <button type="button" class="wb-stage" data-stage="S5">S5 H3 壳</button>
-          <button type="button" class="wb-stage" data-stage="S6">S6 静帧</button>
-          <button type="button" class="wb-stage" data-stage="S7">S7 视频</button>
+    <div class="app-workspace">
+      <!-- ========== 漫剧工作台 ========== -->
+      <div id="workbenchRoot" class="wb-shell" hidden>
+        <nav class="wb-stagebar" aria-label="管线阶段">
+          <div class="wb-stagebar-track">
+            <button type="button" class="wb-stage active" data-stage="S0">S0 立项</button>
+            <button type="button" class="wb-stage" data-stage="S1">S1 扩写</button>
+            <button type="button" class="wb-stage" data-stage="S2">S2 资材</button>
+            <button type="button" class="wb-stage" data-stage="S3">S3 资产图</button>
+            <button type="button" class="wb-stage" data-stage="S4">S4 分镜</button>
+            <button type="button" class="wb-stage" data-stage="S5">S5 H3 壳</button>
+            <button type="button" class="wb-stage" data-stage="S6">S6 静帧</button>
+            <button type="button" class="wb-stage" data-stage="S7">S7 视频</button>
+          </div>
+          <div class="wb-stagebar-actions">
+            <button type="button" class="btn primary btn-sm" id="btnWbRunAll">一键 S1→S5</button>
+            <button type="button" class="btn btn-sm" id="btnWbExport">导出 JSON</button>
+          </div>
         </nav>
-        <div class="actions" style="margin-top:10px">
-          <button type="button" class="btn primary" id="btnWbRunAll">一键跑通 S1→S5（本地）</button>
-          <button type="button" class="btn" id="btnWbExport">导出项目 JSON</button>
-          <button type="button" class="btn ghost" id="wbApiToggle">▸ llama.cpp / API 设置</button>
-          <button type="button" class="btn ghost" id="wbComfyToggle">▸ ComfyUI 设置</button>
-        </div>
-        <div id="wbApiBody" class="dir-api-body" hidden>
-          <div class="director-controls">
-            <div>
-              <label for="wbApiBase">llama.cpp Base URL</label>
-              <input type="text" id="wbApiBase" placeholder="http://127.0.0.1:8080/v1" />
+
+        <div class="wb-grid">
+          <aside class="wb-rail panel-surface">
+            <div class="rail-block">
+              <h2 class="rail-title">管线</h2>
+              <p class="hint tight">文戏 / 影视 / JP-AV→H3。文本走 llama.cpp；媒体走 ComfyUI。</p>
+              <div class="actions stack">
+                <button type="button" class="btn ghost btn-sm" id="wbApiToggle">▸ llama.cpp / API</button>
+                <button type="button" class="btn ghost btn-sm" id="wbComfyToggle">▸ ComfyUI 设置</button>
+              </div>
             </div>
-            <div>
-              <label for="wbApiKey">API Key（可空 / sk-local）</label>
-              <input type="password" id="wbApiKey" placeholder="sk-local" autocomplete="off" />
+
+            <div id="wbApiBody" class="dir-api-body rail-settings" hidden>
+              <div class="field-grid">
+                <div>
+                  <label for="wbApiBase">llama.cpp Base URL</label>
+                  <input type="text" id="wbApiBase" placeholder="http://127.0.0.1:8080/v1" />
+                </div>
+                <div>
+                  <label for="wbApiKey">API Key（可空）</label>
+                  <input type="password" id="wbApiKey" placeholder="sk-local" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="wbApiModel">模型名</label>
+                  <input type="text" id="wbApiModel" placeholder="local-model" />
+                </div>
+              </div>
+              <div class="actions" style="margin-top:8px">
+                <button type="button" class="btn secondary btn-sm" id="btnWbSaveApi">保存</button>
+              </div>
+              <p class="hint tight">与导演台共用设置键。推荐 <code>llama-server --port 8080</code> + CORS。</p>
             </div>
-            <div>
-              <label for="wbApiModel">模型名</label>
-              <input type="text" id="wbApiModel" placeholder="local-model" />
+
+            <div id="wbComfyBody" class="dir-api-body rail-settings" hidden>
+              <div class="field-grid">
+                <div>
+                  <label for="wbComfyBase">ComfyUI Base URL</label>
+                  <input type="text" id="wbComfyBase" placeholder="http://127.0.0.1:8188" />
+                </div>
+                <div>
+                  <label for="wbComfyAuth">可选 Auth</label>
+                  <input type="password" id="wbComfyAuth" placeholder="可空" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="wbComfyCkpt">Checkpoint</label>
+                  <input type="text" id="wbComfyCkpt" placeholder="sd_xl_base_1.0.safetensors" />
+                </div>
+                <div>
+                  <label for="wbComfyWfAsset">S3 工作流</label>
+                  <input type="text" id="wbComfyWfAsset" placeholder="comfy-workflows/wf_asset_t2i.json" />
+                </div>
+                <div>
+                  <label for="wbComfyWfStill">S6 工作流</label>
+                  <input type="text" id="wbComfyWfStill" placeholder="comfy-workflows/wf_storyboard_still.json" />
+                </div>
+                <div>
+                  <label for="wbComfyWfI2v">S7 工作流</label>
+                  <input type="text" id="wbComfyWfI2v" placeholder="comfy-workflows/wf_generic_i2v.json" />
+                </div>
+                <div class="field-row-2">
+                  <div>
+                    <label for="wbComfyW">宽</label>
+                    <input type="number" id="wbComfyW" min="64" step="8" value="768" />
+                  </div>
+                  <div>
+                    <label for="wbComfyH">高</label>
+                    <input type="number" id="wbComfyH" min="64" step="8" value="1344" />
+                  </div>
+                </div>
+              </div>
+              <div class="actions" style="margin-top:8px">
+                <button type="button" class="btn secondary btn-sm" id="btnWbSaveComfy">保存</button>
+                <button type="button" class="btn btn-sm" id="btnWbPingComfy">测试</button>
+                <button type="button" class="btn ghost btn-sm" id="btnWbClearJobs">清理任务</button>
+              </div>
+              <p class="hint tight">直连需 <code>--enable-cors-header</code>，或代理 <code>8190</code>。默认不出图。</p>
+              <div id="wbComfyPing" class="hint tight"></div>
             </div>
-          </div>
-          <div class="actions" style="margin-top:8px">
-            <button type="button" class="btn secondary" id="btnWbSaveApi">保存到 localStorage</button>
-          </div>
-          <p class="hint">与导演台共用同一套设置键。推荐 <code>llama-server --port 8080</code> 并开启 CORS。</p>
-        </div>
-        <div id="wbComfyBody" class="dir-api-body" hidden>
-          <div class="director-controls">
-            <div>
-              <label for="wbComfyBase">ComfyUI Base URL</label>
-              <input type="text" id="wbComfyBase" placeholder="http://127.0.0.1:8188" />
+
+            <div id="wbStatus" class="polish-status" hidden></div>
+
+            <div id="wbQueuePanel" class="wb-queue-panel">
+              <div class="timeline-head">
+                <h2 class="rail-title" style="margin:0">Comfy 队列</h2>
+                <span class="count" id="wbQueueCount">0</span>
+              </div>
+              <div id="wbQueueHost" class="wb-queue-host"><p class="hint">尚无媒体任务</p></div>
             </div>
-            <div>
-              <label for="wbComfyAuth">可选 Auth（Bearer / 完整 Authorization）</label>
-              <input type="password" id="wbComfyAuth" placeholder="可空" autocomplete="off" />
+          </aside>
+
+          <section class="wb-editor panel-surface">
+            <div class="wb-pane" data-pane="S0">
+              <header class="pane-head">
+                <h2>S0 立项锁</h2>
+                <p class="hint">锁定模型 / 画幅 / NSFW / 技能后进入扩写</p>
+              </header>
+              <div class="field-grid cols-3">
+                <div>
+                  <label>模型</label>
+                  <input type="text" value="MiniMax H3（默认锁定）" disabled />
+                </div>
+                <div>
+                  <label for="wbAspect">画幅</label>
+                  <select id="wbAspect">
+                    <option value="9:16" selected>9:16</option>
+                    <option value="16:9">16:9</option>
+                    <option value="1:1">1:1</option>
+                    <option value="4:3">4:3</option>
+                    <option value="3:4">3:4</option>
+                    <option value="21:9">21:9</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="wbNsfwTier">NSFW 强度</label>
+                  <select id="wbNsfwTier">
+                    <option value="soft_av">soft_av</option>
+                    <option value="explicit" selected>explicit</option>
+                    <option value="dark_cnc">dark_cnc</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="wbSkillMode">技能模式</label>
+                  <select id="wbSkillMode">
+                    <option value="drama_only">文戏为主</option>
+                    <option value="av_main">JP-AV 主戏</option>
+                    <option value="mixed" selected>混合</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="wbTargetSec">目标总时长（秒）</label>
+                  <input type="number" id="wbTargetSec" min="5" max="180" value="45" />
+                </div>
+              </div>
+              <div class="seg-row">
+                <div>
+                  <h3 class="micro-label">模式</h3>
+                  <div class="seg wb-mode-seg">
+                    <button type="button" class="active" data-wb-mode="i2v">I2V / FL2VA</button>
+                    <button type="button" data-wb-mode="multiref">Ref2VA 多参考</button>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="micro-label">剪辑</h3>
+                  <div class="seg wb-edit-seg">
+                    <button type="button" class="active" data-wb-edit="continuous">一镜到底</button>
+                    <button type="button" data-wb-edit="multicut">多镜头</button>
+                  </div>
+                </div>
+              </div>
+              <label for="wbSource">一句话 / 短剧情</label>
+              <textarea id="wbSource" rows="6" spellcheck="false" placeholder="示例：爱情旅馆里，一对明显21+的成年情侣从亲吻解衣到传教士，再抽出换后入，最后加速收束。写实、可听见拍击反馈。"></textarea>
+              <p class="hint">下方积木时间轴仍可在「积木组合器」微调；S5 复用 H3 组装器。</p>
             </div>
-            <div>
-              <label for="wbComfyCkpt">Checkpoint 文件名</label>
-              <input type="text" id="wbComfyCkpt" placeholder="sd_xl_base_1.0.safetensors" />
+
+            <div class="wb-pane" data-pane="S1" hidden>
+              <header class="pane-head">
+                <h2>S1 文本扩写</h2>
+                <p class="hint">文戏 skill + 可选 JP-AV 节拍。本地可离线；LLM 走 llama.cpp。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbExpandLocal">本地扩写</button>
+                <button type="button" class="btn secondary" id="btnWbExpandLlm">LLM 扩写</button>
+              </div>
+              <label for="wbExpandOut">扩写结果</label>
+              <textarea id="wbExpandOut" rows="10" spellcheck="false"></textarea>
+              <label for="wbBeatsOut">节拍 JSON</label>
+              <textarea id="wbBeatsOut" rows="7" spellcheck="false" class="mono"></textarea>
             </div>
-            <div>
-              <label for="wbComfyWfAsset">S3 资产工作流</label>
-              <input type="text" id="wbComfyWfAsset" placeholder="comfy-workflows/wf_asset_t2i.json" />
+
+            <div class="wb-pane" data-pane="S2" hidden>
+              <header class="pane-head">
+                <h2>S2 资材提取（CHR / SCN / PRP）</h2>
+                <p class="hint">先确认资材提示词；出图到 S3（显式排队）。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbAssetsLocal">本地提取</button>
+                <button type="button" class="btn secondary" id="btnWbAssetsLlm">LLM 提取</button>
+              </div>
+              <div id="wbAssetsHost" class="wb-host"></div>
             </div>
-            <div>
-              <label for="wbComfyWfStill">S6 静帧工作流</label>
-              <input type="text" id="wbComfyWfStill" placeholder="comfy-workflows/wf_storyboard_still.json" />
+
+            <div class="wb-pane" data-pane="S4" hidden>
+              <header class="pane-head">
+                <h2>S4 分镜镜头卡</h2>
+                <p class="hint">影视机位 + JP-AV 动作链 + 段缝末态。可切到积木组合器改秒数。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbShotsLocal">本地分镜</button>
+                <button type="button" class="btn secondary" id="btnWbShotsLlm">LLM 分镜</button>
+              </div>
+              <div id="wbShotsHost" class="wb-shots"></div>
+              <p class="hint" id="wbSeamNotes"></p>
             </div>
-            <div>
-              <label for="wbComfyWfI2v">S7 I2V 工作流</label>
-              <input type="text" id="wbComfyWfI2v" placeholder="comfy-workflows/wf_generic_i2v.json" />
+
+            <div class="wb-pane" data-pane="S5" hidden>
+              <header class="pane-head">
+                <h2>S5 MiniMax H3 官方壳</h2>
+                <p class="hint">FL2VA 三字段 / Ref2VA 六字段；自动拆 ≤15s JOB。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbCompile">组装 H3 壳 → 时间轴</button>
+                <button type="button" class="btn secondary" id="btnWbCopyJobs">复制全部 JOB</button>
+              </div>
+              <label for="wbJobsOut">JOB 预览</label>
+              <textarea id="wbJobsOut" rows="18" spellcheck="false" class="mono grow-ta"></textarea>
             </div>
-            <div>
-              <label for="wbComfyW">宽</label>
-              <input type="number" id="wbComfyW" min="64" step="8" value="768" />
+
+            <div class="wb-pane" data-pane="S3" hidden>
+              <header class="pane-head">
+                <h2>S3 资材出图（ComfyUI）</h2>
+                <p class="hint">S2 CHR/SCN 投入资产 T2I。需本机 Comfy 在线。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbGenAssets">排队 CHR+SCN</button>
+                <button type="button" class="btn" id="btnWbGenChrOnly">仅角色 CHR</button>
+                <button type="button" class="btn secondary" id="btnWbGotoS4">确认 → S4</button>
+              </div>
+              <div id="wbAssetMediaHost" class="wb-media-grid"></div>
             </div>
-            <div>
-              <label for="wbComfyH">高</label>
-              <input type="number" id="wbComfyH" min="64" step="8" value="1344" />
+
+            <div class="wb-pane" data-pane="S6" hidden>
+              <header class="pane-head">
+                <h2>S6 分镜静帧（ComfyUI）</h2>
+                <p class="hint">镜头卡动作文案 → 关键帧 / 首帧，可作 I2V 参考。</p>
+              </header>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbGenStills">排队全部分镜静帧</button>
+              </div>
+              <div id="wbStillMediaHost" class="wb-media-grid"></div>
             </div>
-          </div>
-          <div class="actions" style="margin-top:8px">
-            <button type="button" class="btn secondary" id="btnWbSaveComfy">保存 Comfy 设置</button>
-            <button type="button" class="btn" id="btnWbPingComfy">测试连接</button>
-            <button type="button" class="btn ghost" id="btnWbClearJobs">清理已完成任务</button>
-          </div>
-          <p class="hint">浏览器直连需 ComfyUI <code>--enable-cors-header</code>，或跑 <code>python3 tools/comfy_cors_proxy.py</code> 后把 Base URL 改成 <code>http://127.0.0.1:8190</code>。默认不出图：须在 S3/S6/S7 显式排队。</p>
-          <div id="wbComfyPing" class="hint"></div>
-        </div>
-        <div id="wbStatus" class="polish-status" hidden></div>
-        <div id="wbQueuePanel" class="wb-queue-panel">
-          <div class="timeline-head" style="margin-top:12px">
-            <h2 style="font-size:14px;margin:0">ComfyUI 任务队列</h2>
-            <span class="count" id="wbQueueCount">0</span>
-          </div>
-          <div id="wbQueueHost" class="wb-queue-host"><p class="hint">尚无媒体任务</p></div>
+
+            <div class="wb-pane" data-pane="S7" hidden>
+              <header class="pane-head">
+                <h2>S7 视频生成（ComfyUI I2V）</h2>
+                <p class="hint">S5 每个 H3 JOB 详细描述 → I2V。参考图须在 Comfy <code>input/</code>。</p>
+              </header>
+              <div class="field-grid cols-2">
+                <div>
+                  <label for="wbI2vRef">默认参考图文件名</label>
+                  <input type="text" id="wbI2vRef" placeholder="example.png" />
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn primary" id="btnWbGenVideos">按 H3 JOBs 排队 I2V</button>
+              </div>
+              <div id="wbVideoMediaHost" class="wb-media-grid"></div>
+            </div>
+          </section>
         </div>
       </div>
 
-      <div class="wb-pane panel" data-pane="S0">
-        <h2>S0 立项锁</h2>
-        <div class="director-controls">
-          <div>
-            <label>模型</label>
-            <input type="text" value="MiniMax H3（默认锁定）" disabled />
+      <!-- ========== 积木组合器 ========== -->
+      <div class="brick-shell">
+        <div class="brick-toolbar" data-brick-ui>
+          <div class="panel-surface toolbar-card">
+            <h2>模型</h2>
+            <div class="seg">
+              <button type="button" class="active" data-model="minimax_h3">MINIMAX H3</button>
+              <button type="button" data-model="ltx_2_5">LTX 2.5</button>
+              <button type="button" data-model="qwen_image">QWEN IMAGE 2.1</button>
+            </div>
+            <p class="hint tight" id="modelHint">偏运动、运镜、声景；I2V 少写外貌</p>
           </div>
-          <div>
-            <label for="wbAspect">画幅</label>
-            <select id="wbAspect">
-              <option value="9:16" selected>9:16</option>
-              <option value="16:9">16:9</option>
-              <option value="1:1">1:1</option>
-              <option value="4:3">4:3</option>
-              <option value="3:4">3:4</option>
-              <option value="21:9">21:9</option>
-            </select>
-          </div>
-          <div>
-            <label for="wbNsfwTier">NSFW 强度</label>
-            <select id="wbNsfwTier">
-              <option value="soft_av">soft_av</option>
-              <option value="explicit" selected>explicit</option>
-              <option value="dark_cnc">dark_cnc</option>
-            </select>
-          </div>
-          <div>
-            <label for="wbSkillMode">技能模式</label>
-            <select id="wbSkillMode">
-              <option value="drama_only">文戏为主</option>
-              <option value="av_main">JP-AV 主戏</option>
-              <option value="mixed" selected>混合</option>
-            </select>
-          </div>
-          <div>
-            <label for="wbTargetSec">目标总时长（秒）</label>
-            <input type="number" id="wbTargetSec" min="5" max="180" value="45" />
+          <div class="panel-surface toolbar-card">
+            <h2>模式</h2>
+            <div class="seg">
+              <button type="button" class="active" data-mode="i2v">图文生视频 (I2V)</button>
+              <button type="button" data-mode="multiref">多参考生视频 (Multi-ref)</button>
+            </div>
+            <p class="hint tight" id="modeHint">首帧/参考图定身份；提示词写动作时序与运镜</p>
           </div>
         </div>
-        <div style="margin-top:10px">
-          <h2 style="margin-bottom:8px">模式</h2>
-          <div class="seg wb-mode-seg">
-            <button type="button" class="active" data-wb-mode="i2v">I2V / FL2VA</button>
-            <button type="button" data-wb-mode="multiref">Ref2VA 多参考</button>
-          </div>
-        </div>
-        <div style="margin-top:10px">
-          <h2 style="margin-bottom:8px">剪辑</h2>
-          <div class="seg wb-edit-seg">
-            <button type="button" class="active" data-wb-edit="continuous">一镜到底</button>
-            <button type="button" data-wb-edit="multicut">多镜头</button>
-          </div>
-        </div>
-        <label for="wbSource" style="margin-top:12px">一句话 / 短剧情</label>
-        <textarea id="wbSource" rows="4" spellcheck="false" placeholder="示例：爱情旅馆里，一对明显21+的成年情侣从亲吻解衣到传教士，再抽出换后入，最后加速收束。写实、可听见拍击反馈。"></textarea>
-        <p class="hint">锁定后进入 S1。下方积木/时间轴仍可手工微调，S5 会复用现有 H3 组装器。</p>
-      </div>
 
-      <div class="wb-pane panel" data-pane="S1" hidden>
-        <h2>S1 文本扩写</h2>
-        <p class="hint">文戏 skill + 可选 JP-AV 节拍。本地规则可离线；LLM 走 llama.cpp。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbExpandLocal">本地扩写</button>
-          <button type="button" class="btn secondary" id="btnWbExpandLlm">LLM 扩写</button>
-        </div>
-        <label for="wbExpandOut" style="margin-top:10px">扩写结果</label>
-        <textarea id="wbExpandOut" rows="8" spellcheck="false"></textarea>
-        <label for="wbBeatsOut" style="margin-top:8px">节拍 JSON</label>
-        <textarea id="wbBeatsOut" rows="6" spellcheck="false" class="mono"></textarea>
-      </div>
+        <div class="brick-grid">
+          <div class="brick-main">
+            <div class="panel director-panel panel-surface" id="directorPanel" data-brick-ui data-hide-in-wb>
+              <div class="timeline-head">
+                <h2>情节导演台 / Story Director</h2>
+                <span class="count" id="dirCountHint">粘贴章节 → 编排时间轴</span>
+              </div>
+              <p class="hint director-warn">
+                支持暗黑/CNC 成人幻想——仅限 <strong>21+ 虚构</strong>。本地规则可不联网；大模型需自备 API。
+              </p>
+              <label for="dirChapter">情节 / 章节原文</label>
+              <textarea id="dirChapter" rows="4" spellcheck="false" placeholder="示例：仓库里，三名成年男人围住一名成年女人……全部角色明显21岁以上虚构 CNC。"></textarea>
+              <div class="director-controls">
+                <div>
+                  <label for="dirTargetSec">目标总时长（秒）</label>
+                  <input type="number" id="dirTargetSec" min="5" max="180" value="45" />
+                </div>
+                <div>
+                  <h3 class="micro-label">剪辑策略</h3>
+                  <div class="seg" id="dirEditSeg">
+                    <button type="button" class="active" data-dir-edit="continuous">一镜到底</button>
+                    <button type="button" data-dir-edit="multicut">多镜头</button>
+                  </div>
+                </div>
+              </div>
+              <div class="actions" style="margin-top:10px">
+                <button type="button" class="btn primary" id="btnDirLocal">本地智能编排</button>
+                <button type="button" class="btn secondary" id="btnDirLlm">用大模型优化编排</button>
+                <button type="button" class="btn" id="btnDirCopySys">复制给 LLM 的系统提示</button>
+                <button type="button" class="btn warn" id="btnDirApply">应用编排到时间轴</button>
+              </div>
+              <button type="button" class="btn ghost dir-api-toggle" id="dirApiToggle">▸ API 设置（可选）</button>
+              <div id="dirApiBody" class="dir-api-body" hidden>
+                <div class="director-controls">
+                  <div>
+                    <label for="dirApiBase">API Base URL</label>
+                    <input type="text" id="dirApiBase" placeholder="https://api.openai.com/v1" />
+                  </div>
+                  <div>
+                    <label for="dirApiKey">API Key（仅存 localStorage）</label>
+                    <input type="password" id="dirApiKey" placeholder="sk-..." autocomplete="off" />
+                  </div>
+                  <div>
+                    <label for="dirModel">模型名</label>
+                    <input type="text" id="dirModel" placeholder="gpt-4o-mini" />
+                  </div>
+                </div>
+                <p class="hint">OpenAI 兼容接口（含中转 / llama.cpp）。Key 只保存在本机浏览器。</p>
+              </div>
+              <label for="directorPreview" style="margin-top:10px">编排预览（JSON）</label>
+              <pre id="directorPreview" class="director-preview">尚未编排</pre>
+              <label for="dirJsonPaste">从 JSON 粘贴应用</label>
+              <textarea id="dirJsonPaste" rows="2" spellcheck="false" placeholder='粘贴 {"selected":{...},"timeline":[...],"editMode":"continuous"}'></textarea>
+              <div class="actions" style="margin-top:8px">
+                <button type="button" class="btn" id="btnDirPasteJson">从 JSON 粘贴应用</button>
+              </div>
+            </div>
 
-      <div class="wb-pane panel" data-pane="S2" hidden>
-        <h2>S2 资材提取（CHR / SCN / PRP）</h2>
-        <p class="hint">先确认资材提示词；出图请到 S3（显式排队，默认不出图）。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbAssetsLocal">本地提取</button>
-          <button type="button" class="btn secondary" id="btnWbAssetsLlm">LLM 提取</button>
-        </div>
-        <div id="wbAssetsHost" style="margin-top:10px"></div>
-      </div>
+            <div class="panel timeline-panel panel-surface" id="timelinePanel" data-brick-ui>
+              <div class="timeline-head">
+                <h2>动作时间轴 / 一套组合</h2>
+                <span class="count" id="tlTotal">总时长 0s · 0 段</span>
+              </div>
+              <div class="tl-controls">
+                <div>
+                  <h3 class="micro-label">剪辑策略</h3>
+                  <div class="seg" id="editModeSeg">
+                    <button type="button" class="active" data-edit="continuous">一镜到底</button>
+                    <button type="button" data-edit="multicut">多镜头</button>
+                  </div>
+                  <p class="hint tight" id="editHint">单一连续镜头；morph/transition 衔接</p>
+                </div>
+                <div>
+                  <h3 class="micro-label">快捷</h3>
+                  <div class="actions">
+                    <button type="button" class="btn primary btn-sm" id="btnAddSeg">＋ 添加动作段</button>
+                    <button type="button" class="btn btn-sm" id="btnSeedTl">从已选积木填充</button>
+                    <button type="button" class="btn ghost btn-sm" id="btnClearTl">清空时间轴</button>
+                  </div>
+                </div>
+              </div>
+              <div id="timelineRows" class="timeline-rows"></div>
+              <p class="hint tight" id="tlHint">
+                每段选类别 + 动作 + 秒数（单段最长 15s）。<strong>H3</strong> 总长&gt;15s 拆 JOB；<strong>LTX</strong> 合成一组 [GLOBAL]+[SHOT]。
+              </p>
+              <p class="tl-warn" id="tlWarn" hidden></p>
+            </div>
 
-      <div class="wb-pane panel" data-pane="S4" hidden>
-        <h2>S4 分镜镜头卡</h2>
-        <p class="hint">影视机位 + JP-AV 动作链 + 段缝末态。仍可在下方时间轴改积木秒数。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbShotsLocal">本地分镜</button>
-          <button type="button" class="btn secondary" id="btnWbShotsLlm">LLM 分镜</button>
-        </div>
-        <div id="wbShotsHost" class="wb-shots" style="margin-top:10px"></div>
-        <p class="hint" id="wbSeamNotes"></p>
-      </div>
-
-      <div class="wb-pane panel" data-pane="S5" hidden>
-        <h2>S5 MiniMax H3 官方壳</h2>
-        <p class="hint">复用 app.js：FL2VA 三字段 / Ref2VA 六字段；自动拆 ≤15s JOB。可将结果复制到 Comfy / 海螺。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbCompile">组装 H3 壳 → 时间轴</button>
-          <button type="button" class="btn secondary" id="btnWbCopyJobs">复制全部 JOB</button>
-        </div>
-        <label for="wbJobsOut" style="margin-top:10px">JOB 预览</label>
-        <textarea id="wbJobsOut" rows="16" spellcheck="false" class="mono"></textarea>
-      </div>
-
-      <div class="wb-pane panel" data-pane="S3" hidden>
-        <h2>S3 资材出图（ComfyUI）</h2>
-        <p class="hint">把 S2 CHR/SCN（及可选 PRP）提示词投入资产 T2I 工作流。需本机 ComfyUI 在线且工作流 checkpoint 可用。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbGenAssets">排队生成全部 CHR+SCN</button>
-          <button type="button" class="btn" id="btnWbGenChrOnly">仅角色 CHR</button>
-          <button type="button" class="btn secondary" id="btnWbGotoS4">确认后去 S4 分镜</button>
-        </div>
-        <div id="wbAssetMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
-      </div>
-
-      <div class="wb-pane panel" data-pane="S6" hidden>
-        <h2>S6 分镜静帧（ComfyUI）</h2>
-        <p class="hint">用镜头卡动作文案生成关键帧 / 首帧静图，可作 I2V 参考。</p>
-        <div class="actions">
-          <button type="button" class="btn primary" id="btnWbGenStills">排队生成全部分镜静帧</button>
-        </div>
-        <div id="wbStillMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
-      </div>
-
-      <div class="wb-pane panel" data-pane="S7" hidden>
-        <h2>S7 视频生成钩子（ComfyUI I2V）</h2>
-        <p class="hint">将 S5 每个 H3 JOB 的详细描述投入 I2V 工作流模板。默认 <code>wf_generic_i2v.json</code> 是可改的脚手架——请换成你本机真实 I2V API 图。参考图文件名填 Comfy <code>input/</code> 下已有文件。</p>
-        <div class="director-controls">
-          <div>
-            <label for="wbI2vRef">默认参考图文件名（Comfy input/）</label>
-            <input type="text" id="wbI2vRef" placeholder="example.png" />
+            <div class="brick-modules-wrap" data-brick-ui>
+              <div class="actions brick-mod-actions">
+                <button type="button" class="btn warn" id="btnRandom">🎲 随机组合</button>
+                <button type="button" class="btn ghost" id="btnClear">清空积木</button>
+              </div>
+              <div class="modules" id="modules"></div>
+            </div>
           </div>
+
+          <aside class="preview brick-preview" data-brick-ui>
+            <div class="panel panel-surface preview-card">
+              <h3>实时预览</h3>
+              <p class="hint tight" id="metaLine"></p>
+
+              <div class="polish-bar">
+                <label class="chk-ai" for="chkAiPolish">
+                  <input type="checkbox" id="chkAiPolish" />
+                  <span>AI 润色提示词</span>
+                </label>
+                <button type="button" class="btn ghost btn-xs" id="btnRunPolish">重新润色</button>
+              </div>
+              <p class="hint tight" id="polishHint">默认<strong>直接组装</strong>。开启 AI 后主预览显示润色后文本。</p>
+              <div id="polishStatus" class="polish-status" hidden></div>
+
+              <div id="refSlotHost"></div>
+              <label for="outPrompt" id="lblPrompt">直接组装提示词</label>
+              <textarea id="outPrompt" spellcheck="false"></textarea>
+
+              <div id="polishWrap" hidden>
+                <label for="outPolished" id="lblPolished">AI 润色后（可复制）</label>
+                <textarea id="outPolished" spellcheck="false" placeholder="开启「AI 润色」并配置 API 后生成…"></textarea>
+              </div>
+
+              <div id="jobPromptsHost" class="job-prompts-host"></div>
+
+              <label for="outNeg">负面提示词 / 排除项</label>
+              <textarea id="outNeg" class="neg-ta" spellcheck="false"></textarea>
+              <div class="actions sticky-actions">
+                <button type="button" class="btn primary" id="btnCopy">复制提示词</button>
+                <button type="button" class="btn ghost" id="btnCopyRaw" hidden>复制原文</button>
+                <button type="button" class="btn secondary" id="btnCopyNeg">复制负面</button>
+                <button type="button" class="btn" id="btnJson">导出 JSON</button>
+                <button type="button" class="btn" id="btnTxt">导出 TXT</button>
+              </div>
+            </div>
+            <div class="panel panel-surface help-card">
+              <h3>使用提示</h3>
+              <p class="hint help-text">
+                1) 选模型与模式 → 2) 导演台或积木 → 3) 时间轴 ≥1 段 → 4) 复制主提示词<br/>
+                <strong>LTX 2.5</strong>：<code>[GLOBAL]</code> + <code>[SHOT n | start–end]</code><br/>
+                <strong>H3</strong>：FL2VA 三字段 / Ref2VA 六字段；可拆 ≤15s JOB<br/>
+                暗黑模块均为 21+ 虚构成人 CNC。漫剧请切「漫剧工作台」。
+              </p>
+            </div>
+          </aside>
         </div>
-        <div class="actions" style="margin-top:8px">
-          <button type="button" class="btn primary" id="btnWbGenVideos">按 H3 JOBs 排队 I2V</button>
-        </div>
-        <div id="wbVideoMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
       </div>
     </div>
 
-
-    <div class="controls-top" data-brick-ui>
-      <div class="panel">
-        <h2>模型</h2>
-        <div class="seg">
-          <button type="button" class="active" data-model="minimax_h3">MINIMAX H3</button>
-          <button type="button" data-model="ltx_2_5">LTX 2.5</button>
-          <button type="button" data-model="qwen_image">QWEN IMAGE 2.1</button>
-        </div>
-        <p class="hint" id="modelHint">偏运动、运镜、声景；I2V 少写外貌</p>
-      </div>
-      <div class="panel">
-        <h2>模式</h2>
-        <div class="seg">
-          <button type="button" class="active" data-mode="i2v">图文生视频 (I2V)</button>
-          <button type="button" data-mode="multiref">多参考生视频 (Multi-ref)</button>
-        </div>
-        <p class="hint" id="modeHint">首帧/参考图定身份；提示词写动作时序与运镜</p>
-      </div>
-    </div>
-
-    <div class="panel director-panel" id="directorPanel" data-brick-ui data-hide-in-wb>
-      <div class="timeline-head">
-        <h2>情节导演台 / Story Director</h2>
-        <span class="count" id="dirCountHint">粘贴章节 → 编排时间轴</span>
-      </div>
-      <p class="hint director-warn">
-        支持暗黑/CNC 成人幻想（强奸、轮奸、调教、迷奸等）——仅限 <strong>21+ 虚构</strong>。本地规则编排可不联网；大模型编排/润色需自备 API。
-      </p>
-      <label for="dirChapter">情节 / 章节原文</label>
-      <textarea id="dirChapter" rows="5" spellcheck="false" placeholder="示例：仓库里，三名成年男人围住一名成年女人……先撕开衣服压制挣扎，再轮流口交与进入；她又哭又喘，最后中出收场。全部角色明显21岁以上虚构 CNC。"></textarea>
-      <div class="director-controls">
-        <div>
-          <label for="dirTargetSec">目标总时长（秒）</label>
-          <input type="number" id="dirTargetSec" min="5" max="180" value="45" />
-        </div>
-        <div>
-          <h2 style="margin-bottom:8px">剪辑策略</h2>
-          <div class="seg" id="dirEditSeg">
-            <button type="button" class="active" data-dir-edit="continuous">一镜到底</button>
-            <button type="button" data-dir-edit="multicut">多镜头</button>
-          </div>
-        </div>
-      </div>
-      <div class="actions" style="margin-top:10px">
-        <button type="button" class="btn primary" id="btnDirLocal">本地智能编排</button>
-        <button type="button" class="btn secondary" id="btnDirLlm">用大模型优化编排</button>
-        <button type="button" class="btn" id="btnDirCopySys">复制给 LLM 的系统提示</button>
-        <button type="button" class="btn warn" id="btnDirApply">应用编排到时间轴</button>
-      </div>
-      <button type="button" class="btn ghost dir-api-toggle" id="dirApiToggle">▸ API 设置（可选）</button>
-      <div id="dirApiBody" class="dir-api-body" hidden>
-        <div class="director-controls">
-          <div>
-            <label for="dirApiBase">API Base URL</label>
-            <input type="text" id="dirApiBase" placeholder="https://api.openai.com/v1" />
-          </div>
-          <div>
-            <label for="dirApiKey">API Key（仅存 localStorage）</label>
-            <input type="password" id="dirApiKey" placeholder="sk-..." autocomplete="off" />
-          </div>
-          <div>
-            <label for="dirModel">模型名</label>
-            <input type="text" id="dirModel" placeholder="gpt-4o-mini" />
-          </div>
-        </div>
-        <p class="hint">OpenAI 兼容接口（含中转）。Key 只保存在本机浏览器，不上传到本工具服务器。</p>
-      </div>
-      <label for="directorPreview" style="margin-top:10px">编排预览（JSON beats + job packs）</label>
-      <pre id="directorPreview" class="director-preview">尚未编排</pre>
-      <label for="dirJsonPaste">从 JSON 粘贴应用（外部 LLM 返回）</label>
-      <textarea id="dirJsonPaste" rows="3" spellcheck="false" placeholder='粘贴 {"selected":{...},"timeline":[...],"editMode":"continuous"}'></textarea>
-      <div class="actions" style="margin-top:8px">
-        <button type="button" class="btn" id="btnDirPasteJson">从 JSON 粘贴应用</button>
-      </div>
-    </div>
-
-    <div class="panel timeline-panel" id="timelinePanel" data-brick-ui>
-      <div class="timeline-head">
-        <h2>动作时间轴 / 一套组合</h2>
-        <span class="count" id="tlTotal">总时长 0s · 0 段</span>
-      </div>
-      <div class="controls-top" style="margin-bottom:10px">
-        <div>
-          <h2 style="margin-bottom:8px">剪辑策略</h2>
-          <div class="seg" id="editModeSeg">
-            <button type="button" class="active" data-edit="continuous">一镜到底</button>
-            <button type="button" data-edit="multicut">多镜头</button>
-          </div>
-          <p class="hint" id="editHint">单一连续镜头；动作之间用 morph/transition 衔接，保持身份、接触点、运镜平滑</p>
-        </div>
-        <div>
-          <h2 style="margin-bottom:8px">快捷</h2>
-          <div class="actions">
-            <button type="button" class="btn primary" id="btnAddSeg">＋ 添加动作段</button>
-            <button type="button" class="btn" id="btnSeedTl">从已选积木填充</button>
-            <button type="button" class="btn ghost" id="btnClearTl">清空时间轴</button>
-          </div>
-        </div>
-      </div>
-      <div id="timelineRows" class="timeline-rows"></div>
-      <p class="hint" style="margin-top:10px;line-height:1.55" id="tlHint">
-        每段选类别 + 动作 + 秒数（单段最长 15s）。含「重口味·强制/CNC」类别。<strong>H3</strong>：总长&gt;15s 拆多条 JOB；<strong>LTX 2.5</strong>：整段合成<strong>一组</strong>[GLOBAL]+[SHOT] 带累计时间，不拆 JOB。
-      </p>
-      <p class="tl-warn" id="tlWarn" hidden></p>
-    </div>
-
-    <div class="layout" data-brick-ui>
-      <div>
-        <div class="actions" style="margin-bottom:12px">
-          <button type="button" class="btn warn" id="btnRandom">🎲 随机组合</button>
-          <button type="button" class="btn ghost" id="btnClear">清空积木</button>
-        </div>
-        <div class="modules" id="modules"></div>
-      </div>
-
-      <aside class="preview">
-        <div class="panel">
-          <h3>实时预览</h3>
-          <p class="hint" id="metaLine" style="margin-bottom:10px"></p>
-
-          <div class="polish-bar">
-            <label class="chk-ai" for="chkAiPolish">
-              <input type="checkbox" id="chkAiPolish" />
-              <span>AI 润色提示词</span>
-            </label>
-            <button type="button" class="btn ghost btn-xs" id="btnRunPolish">重新润色</button>
-          </div>
-          <p class="hint" style="margin:4px 0 6px" id="polishHint">默认<strong>直接组装</strong>（积木+时间轴，非 AI）。H3：按 JOB 润色；LTX：整组 [GLOBAL]+[SHOT] 一次润色。成功后主预览显示<strong>润色后</strong>；失败保留原文。</p>
-          <div id="polishStatus" class="polish-status" hidden></div>
-
-          <div id="refSlotHost"></div>
-          <label for="outPrompt" id="lblPrompt">直接组装提示词</label>
-          <textarea id="outPrompt" spellcheck="false"></textarea>
-
-          <div id="polishWrap" hidden>
-            <label for="outPolished" id="lblPolished" style="margin-top:10px">AI 润色后（可复制）</label>
-            <textarea id="outPolished" spellcheck="false" placeholder="开启「AI 润色」并配置 API 后生成…"></textarea>
-          </div>
-
-          <div id="jobPromptsHost" class="job-prompts-host"></div>
-
-          <label for="outNeg" style="margin-top:10px">负面提示词 / 排除项</label>
-          <textarea id="outNeg" style="min-height:100px" spellcheck="false"></textarea>
-          <div class="actions" style="margin-top:12px">
-            <button type="button" class="btn primary" id="btnCopy">复制提示词</button>
-            <button type="button" class="btn ghost" id="btnCopyRaw" hidden>复制原文</button>
-            <button type="button" class="btn secondary" id="btnCopyNeg">复制负面</button>
-            <button type="button" class="btn" id="btnJson">导出 JSON</button>
-            <button type="button" class="btn" id="btnTxt">导出 TXT</button>
-          </div>
-        </div>
-        <div class="panel">
-          <h3>使用提示</h3>
-          <p class="hint" style="line-height:1.6;margin:0">
-            1) 选模型与模式 → 2) 导演台粘贴情节或点选积木 → 3) 时间轴 ≥1 段并选剪辑策略 → 4) 右侧复制主提示词<br/>
-            <strong>LTX 2.5</strong>：单提示词组多 SHOT 带时间 —— <code>[GLOBAL]</code> + <code>[SHOT n | start–end]</code>；时间紧挨无重叠/空隙；每镜一个主动作+一个运镜。<br/>
-            <strong>H3 FL2VA/I2VA</strong>：三字段壳；可拆 ≤15s 多 JOB。<strong>H3 Ref2VA</strong>：六字段壳（勿用 integrated_multimodal_description）。<br/>
-            <strong>直接组装</strong>：默认，不调用 AI。<strong>AI 润色</strong>：H3 按 JOB；LTX 整组一次；成功后主预览显示润色后。<br/>
-            <strong>一镜到底</strong>：morph / continuous take。<strong>多镜头</strong>：match cut / raccord。暗黑模块均为 21+ 虚构成人 CNC 幻想。
-          </p>
-        </div>
-      </aside>
-    </div>
-
-    <footer class="note">
-      本地单页工具 · v1.6.0 漫剧工作台 Phase A · 零构建依赖 · 仅生成提示词模板 · 不生成或托管色情媒体文件<br/>
-      打开方式：双击 index.html，或 <code>cd web-app && python3 -m http.server 8765</code> · 技能包见 <code>skills/</code>
+    <footer class="app-footer">
+      本地单页 · v1.8.0 全屏工作台壳 · Phase A/B · 零构建 · 仅提示词模板 · 不托管色情媒体 ·
+      <code>python3 -m http.server 8765</code>
     </footer>
   </div>
 

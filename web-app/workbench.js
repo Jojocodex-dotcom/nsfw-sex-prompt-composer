@@ -776,12 +776,13 @@
 
   function setUiMode(mode) {
     wb.uiMode = mode;
+    document.body.dataset.uiMode = mode;
     const wbRoot = $("#workbenchRoot");
     const brickBlocks = $all("[data-brick-ui]");
     $all(".ui-mode-seg button").forEach((b) => b.classList.toggle("active", b.getAttribute("data-ui-mode") === mode));
     if (wbRoot) wbRoot.hidden = mode !== "workbench";
     brickBlocks.forEach((el) => {
-      // keep bricks usable under workbench too (for S4 tweak), but collapse director duplicate optional
+      // Workbench is full-bleed; brick shell is CSS-hidden. Keep DOM for compile/timeline API.
       if (mode === "workbench") {
         if (el.hasAttribute("data-hide-in-wb")) el.hidden = true;
         else el.hidden = false;
@@ -789,9 +790,7 @@
         el.hidden = false;
       }
     });
-    const heroSub = $("#stats");
-    // title tweak
-    const h1 = $("header.hero h1");
+    const h1 = $("#appTitle") || $("header.hero h1") || $(".chrome-titles h1");
     if (h1) {
       h1.textContent = mode === "workbench" ? "NSFW H3 漫剧工作台" : "性爱视频提示词组合器";
     }
@@ -861,7 +860,7 @@
   function exportProject() {
     syncLocksFromUI();
     const blob = {
-      version: "1.7.0",
+      version: "1.8.0",
       project: { locks: { ...wb.locks } },
       source_text: wb.sourceText,
       expanded: wb.expandedText,
@@ -983,7 +982,7 @@
     setUiMode("bricks");
     setStage("S0");
     const ver = $("#wbVersion");
-    if (ver) ver.textContent = "v1.7.0 Phase B";
+    if (ver) ver.textContent = "v1.8.0";
     const C = comfy();
     if (C && C.onQueueChange) C.onQueueChange(renderQueue);
     renderQueue();

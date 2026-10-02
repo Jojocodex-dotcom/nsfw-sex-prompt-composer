@@ -1,15 +1,17 @@
-/* NSFW MiniMax H3 Manju Workbench — Phase A MVP (prompt-only)
+/* NSFW MiniMax H3 Manju Workbench — Phase B (prompts + ComfyUI media)
  * Extends the brick composer UI; does not replace it.
- * Stages: S0 locks → S1 expand → S2 assets → S4 storyboard → S5 H3 shell
- * S3/S6/S7 media generation intentionally omitted.
+ * Stages: S0→S5 prompts; S3/S6/S7 optional ComfyUI queue
  */
 (function () {
   const STAGES = [
     { id: "S0", title: "立项锁", short: "S0" },
     { id: "S1", title: "文本扩写", short: "S1" },
     { id: "S2", title: "资材提取", short: "S2" },
+    { id: "S3", title: "资产图", short: "S3" },
     { id: "S4", title: "分镜", short: "S4" },
-    { id: "S5", title: "H3 壳", short: "S5" }
+    { id: "S5", title: "H3 壳", short: "S5" },
+    { id: "S6", title: "静帧", short: "S6" },
+    { id: "S7", title: "视频", short: "S7" }
   ];
 
   const wb = {
@@ -31,6 +33,10 @@
     shots: [],
     seamNotes: "",
     jobsPreview: "",
+    jobsStructured: [],
+    mediaByAsset: {},
+    mediaByShot: {},
+    mediaByJob: {},
     status: "",
     busy: false
   };
@@ -91,6 +97,257 @@
     if ($("#wbApiKey")) $("#wbApiKey").value = cfg.apiKey || "";
     if ($("#wbApiModel")) $("#wbApiModel").value = cfg.model || "local-model";
   }
+
+
+  function comfy() {
+    return window.NSFWComfy;
+  }
+
+  function loadComfyIntoWorkbench() {
+    const C = comfy();
+    if (!C) return;
+    const cfg = C.loadSettings();
+    if ($("#wbComfyBase")) $("#wbComfyBase").value = cfg.baseUrl || "http://127.0.0.1:8188";
+    if ($("#wbComfyAuth")) $("#wbComfyAuth").value = cfg.authHeader || "";
+    if ($("#wbComfyCkpt")) $("#wbComfyCkpt").value = cfg.ckpt || "";
+    if ($("#wbComfyWfAsset")) $("#wbComfyWfAsset").value = cfg.wfAsset || "";
+    if ($("#wbComfyWfStill")) $("#wbComfyWfStill").value = cfg.wfStill || "";
+    if ($("#wbComfyWfI2v")) $("#wbComfyWfI2v").value = cfg.wfI2v || "";
+    if ($("#wbComfyW")) $("#wbComfyW").value = cfg.width || 768;
+    if ($("#wbComfyH")) $("#wbComfyH").value = cfg.height || 1344;
+  }
+
+  function persistComfyFromWorkbench() {
+    const C = comfy();
+    if (!C) return null;
+    const size = C.aspectToSize(wb.locks.aspect, Math.max(Number($("#wbComfyH") && $("#wbComfyH").value) || 1344, Number($("#wbComfyW") && $("#wbComfyW").value) || 768));
+    // Prefer explicit W/H fields; fall back to aspect-derived
+    const width = Number(($("#wbComfyW") && $("#wbComfyW").value) || size.width);
+    const height = Number(($("#wbComfyH") && $("#wbComfyH").value) || size.height);
+    return C.saveSettings({
+      baseUrl: ($("#wbComfyBase") && $("#wbComfyBase").value.trim()) || "http://127.0.0.1:8188",
+      authHeader: ($("#wbComfyAuth") && $("#wbComfyAuth").value) || "",
+      ckpt: ($("#wbComfyCkpt") && $("#wbComfyCkpt").value.trim()) || "sd_xl_base_1.0.safetensors",
+      wfAsset: ($("#wbComfyWfAsset") && $("#wbComfyWfAsset").value.trim()) || "comfy-workflows/wf_asset_t2i.json",
+      wfStill: ($("#wbComfyWfStill") && $("#wbComfyWfStill").value.trim()) || "comfy-workflows/wf_storyboard_still.json",
+      wfI2v: ($("#wbComfyWfI2v") && $("#wbComfyWfI2v").value.trim()) || "comfy-workflows/wf_generic_i2v.json",
+      width: width,
+      height: height
+    });
+  }
+
+  function renderQueue(jobs) {
+    const host = $("#wbQueueHost");
+    const count = $("#wbQueueCount");
+    const list = jobs || (comfy() && comfy().getJobs()) || [];
+    if (count) count.textContent = String(list.length);
+    if (!host) return;
+    if (!list.length) {
+      host.innerHTML = '<p class="hint">尚无媒体任务</p>';
+      return;
+    }
+    host.innerHTML = list
+      .map((j) => {
+        const thumb =
+          j.previewUrl && (j.kind !== "i2v" || /\.(png|jpg|jpeg|webp|gif)(\?|$)/i.test(j.previewUrl))
+            ? `<a href="${esc(j.previewUrl)}" target="_blank" rel="noopener"><img class="wb-thumb" src="${esc(j.previewUrl)}" alt="" /></a>`
+            : j.previewUrl
+              ? `<a class="wb-link" href="${esc(j.previewUrl)}" target="_blank" rel="noopener">打开输出</a>`
+              : "";
+        return `<div class="wb-queue-item status-${esc(j.status)}" data-job-id="${esc(j.id)}">
+          <div class="wb-queue-main">
+            <div><strong>${esc(j.label)}</strong> · <span class="wb-pill">${esc(j.kind)}</span> · <span class="wb-pill">${esc(j.status)}</span></div>
+            <div class="muted">${j.promptId ? "prompt_id=" + esc(j.promptId) : ""}${j.error ? " · " + esc(j.error) : ""}</div>
+            <div class="wb-queue-actions">
+              <button type="button" class="btn ghost btn-wb-retry" data-retry="${esc(j.id)}">重试</button>
+            </div>
+          </div>
+          <div class="wb-queue-thumb">${thumb}</div>
+        </div>`;
+      })
+      .join("");
+    host.querySelectorAll("[data-retry]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-retry");
+        const C = comfy();
+        if (!C) return;
+        Promise.resolve(C.retryJob(id))
+          .then(() => toast("已重试"))
+          .catch((e) => setStatus(String(e.message || e), true));
+      });
+    });
+    renderMediaGrids();
+  }
+
+  function renderMediaGrids() {
+    const C = comfy();
+    const jobs = (C && C.getJobs()) || [];
+    const byKind = (kind) => jobs.filter((j) => j.kind === kind);
+
+    function cards(list) {
+      if (!list.length) return '<p class="hint">尚无成功输出</p>';
+      return list
+        .map((j) => {
+          const url = j.previewUrl || "";
+          const img = url
+            ? `<a href="${esc(url)}" target="_blank" rel="noopener"><img class="wb-thumb lg" src="${esc(url)}" alt="" /></a>`
+            : "";
+          return `<article class="wb-media-card"><header>${esc(j.label)} · ${esc(j.status)}</header>${img}<div class="muted">${esc(j.error || "")}</div></article>`;
+        })
+        .join("");
+    }
+    const a = $("#wbAssetMediaHost");
+    const s = $("#wbStillMediaHost");
+    const v = $("#wbVideoMediaHost");
+    if (a) a.innerHTML = cards(byKind("asset_t2i"));
+    if (s) s.innerHTML = cards(byKind("storyboard_still"));
+    if (v) v.innerHTML = cards(byKind("i2v"));
+  }
+
+  function sizeFromLocks() {
+    const C = comfy();
+    const cfg = (C && C.loadSettings()) || {};
+    if (C && C.aspectToSize) {
+      const longSide = Math.max(cfg.width || 768, cfg.height || 1344);
+      return C.aspectToSize(wb.locks.aspect, longSide);
+    }
+    return { width: cfg.width || 768, height: cfg.height || 1344 };
+  }
+
+  async function runGenAssets(onlyChr) {
+    const C = comfy();
+    if (!C) throw new Error("comfy.js 未加载");
+    persistComfyFromWorkbench();
+    const assets = wb.assets || {};
+    const items = [];
+    (assets.characters || []).forEach((c) => {
+      if (c.prompt) items.push({ assetId: c.id, label: "CHR " + c.id, positive: c.prompt + (c.wardrobe_lock ? ", " + c.wardrobe_lock : "") });
+    });
+    if (!onlyChr) {
+      (assets.scenes || []).forEach((c) => {
+        if (c.prompt) items.push({ assetId: c.id, label: "SCN " + c.id, positive: c.prompt });
+      });
+    }
+    if (!items.length) throw new Error("S2 尚无可用资材提示词，请先提取");
+    const size = sizeFromLocks();
+    setStatus("S3 排队 " + items.length + " 张资产图…");
+    setStage("S3");
+    // sequential to avoid flooding local GPU
+    for (const it of items) {
+      try {
+        const job = await C.enqueueAssetT2I(Object.assign({}, it, size));
+        if (job && job.previewUrl) wb.mediaByAsset[it.assetId] = job.previewUrl;
+      } catch (e) {
+        setStatus("S3 部分失败: " + (e.message || e), true);
+      }
+    }
+    setStatus("S3 资产图队列已处理（见上方任务队列）");
+    toast("S3 完成");
+    renderMediaGrids();
+  }
+
+  async function runGenStills() {
+    const C = comfy();
+    if (!C) throw new Error("comfy.js 未加载");
+    persistComfyFromWorkbench();
+    if (!wb.shots.length) throw new Error("S4 尚无镜头卡");
+    const size = sizeFromLocks();
+    setStatus("S6 排队 " + wb.shots.length + " 张静帧…");
+    setStage("S6");
+    for (const s of wb.shots) {
+      const positive = [
+        s.action || "",
+        s.shot_size || "",
+        s.angle || "",
+        s.camera || "",
+        s.av_pose ? "pose " + s.av_pose : "",
+        s.end_state ? "end state: " + s.end_state : "",
+        "cinematic still, 21+ adults only"
+      ]
+        .filter(Boolean)
+        .join(", ");
+      try {
+        const job = await C.enqueueStill(
+          Object.assign({ shotId: s.id, label: s.id, positive }, size)
+        );
+        if (job && job.previewUrl) wb.mediaByShot[s.id] = job.previewUrl;
+      } catch (e) {
+        setStatus("S6 部分失败: " + (e.message || e), true);
+      }
+    }
+    setStatus("S6 静帧队列已处理");
+    toast("S6 完成");
+    renderMediaGrids();
+  }
+
+  function extractJobPositivesFromPreview() {
+    const text = ($("#wbJobsOut") && $("#wbJobsOut").value) || wb.jobsPreview || "";
+    if (!text.trim()) return [];
+    // Prefer structured jobs from app
+    const A = app();
+    if (A && A.buildH3JobPrompts) {
+      try {
+        const jobs = A.buildH3JobPrompts();
+        if (jobs && jobs.length) {
+          return jobs.map((j) => ({
+            jobIndex: j.index,
+            label: "JOB " + j.index,
+            positive: j.shell || j.text || "",
+            seconds: j.seconds
+          }));
+        }
+      } catch (_) {}
+    }
+    const parts = text.split(/===\s*JOB\s+(\d+)/i);
+    // split yields [pre, idx, body, idx, body...]
+    const out = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      const idx = Number(parts[i]);
+      const body = (parts[i + 1] || "").replace(/^\s*\([^)]*\)\s*===/, "").trim();
+      out.push({ jobIndex: idx, label: "JOB " + idx, positive: body });
+    }
+    return out;
+  }
+
+  async function runGenVideos() {
+    const C = comfy();
+    if (!C) throw new Error("comfy.js 未加载");
+    persistComfyFromWorkbench();
+    const jobs = extractJobPositivesFromPreview();
+    if (!jobs.length) throw new Error("S5 尚无 H3 JOB，请先组装壳");
+    const ref = ($("#wbI2vRef") && $("#wbI2vRef").value.trim()) || "example.png";
+    const size = sizeFromLocks();
+    setStatus("S7 排队 " + jobs.length + " 条 I2V（脚手架工作流，请换成你的真实 I2V 图）…");
+    setStage("S7");
+    for (const j of jobs) {
+      // Prefer detailed_description / integrated field slices if present
+      let positive = j.positive;
+      const m =
+        positive.match(/detailed_description["\s:]+([\s\S]*?)(?:overall_soundscape|non_diegetic_music|$)/i) ||
+        positive.match(/integrated_multimodal_description["\s:]+([\s\S]*?)(?:overall_soundscape|non_diegetic_music|$)/i);
+      if (m) positive = m[1].replace(/^[\s:"{]+|[\s,"}]+$/g, "").slice(0, 3500);
+      try {
+        const job = await C.enqueueI2V(
+          Object.assign(
+            {
+              jobIndex: j.jobIndex,
+              label: j.label,
+              positive: positive || j.positive,
+              refImageName: ref
+            },
+            size
+          )
+        );
+        if (job && job.previewUrl) wb.mediaByJob[j.jobIndex] = job.previewUrl;
+      } catch (e) {
+        setStatus("S7 部分失败: " + (e.message || e), true);
+      }
+    }
+    setStatus("S7 I2V 队列已处理（默认模板多为静图脚手架，请换真实视频节点）");
+    toast("S7 完成");
+    renderMediaGrids();
+  }
+
 
   async function llm(system, user, temperature) {
     const D = dir();
@@ -464,6 +721,7 @@
     let text = "";
     if (A && A.buildH3JobPrompts) {
       const jobs = A.buildH3JobPrompts();
+      wb.jobsStructured = jobs;
       text = jobs
         .map((j) => {
           const body = j.shell || j.text || "";
@@ -480,7 +738,7 @@
     // also push to main preview if workbench wants
     const main = $("#outPrompt");
     if (main && text) main.value = text;
-    setStatus("S5 已组装 MiniMax H3 官方壳（≤15s JOBs）。Phase A 只出提示词，未调用 ComfyUI。");
+    setStatus("S5 已组装 MiniMax H3 官方壳（≤15s JOBs）。可到 S6/S7 显式排队 ComfyUI。");
     toast("S5 H3 壳完成");
     renderStageBodies();
   }
@@ -603,7 +861,7 @@
   function exportProject() {
     syncLocksFromUI();
     const blob = {
-      version: "1.6.0",
+      version: "1.7.0",
       project: { locks: { ...wb.locks } },
       source_text: wb.sourceText,
       expanded: wb.expandedText,
@@ -611,7 +869,13 @@
       assets: wb.assets,
       shots: wb.shots,
       seam_notes: wb.seamNotes,
-      jobs_preview: wb.jobsPreview
+      jobs_preview: wb.jobsPreview,
+      media: {
+        by_asset: wb.mediaByAsset,
+        by_shot: wb.mediaByShot,
+        by_job: wb.mediaByJob,
+        queue: (comfy() && comfy().getJobs && comfy().getJobs()) || []
+      }
     };
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
@@ -659,7 +923,33 @@
       ["#btnWbSaveApi", () => {
         persistApiFromWorkbench();
         toast("llama.cpp / API 设置已保存");
-      }]
+      }],
+      ["#btnWbSaveComfy", () => {
+        persistComfyFromWorkbench();
+        toast("ComfyUI 设置已保存");
+      }],
+      ["#btnWbPingComfy", async () => {
+        persistComfyFromWorkbench();
+        const C = comfy();
+        const el = $("#wbComfyPing");
+        if (!C) throw new Error("comfy.js 未加载");
+        if (el) el.textContent = "测试中…";
+        const r = await C.ping();
+        if (el) el.textContent = r.ok ? ("OK · " + r.baseUrl) : ("失败 · " + r.baseUrl + " · " + r.error);
+        if (!r.ok) throw new Error(r.error || "ComfyUI 不可达（检查 CORS / 地址）");
+        toast("ComfyUI 连接成功");
+      }],
+      ["#btnWbClearJobs", () => {
+        const C = comfy();
+        if (C) C.clearFinished();
+        renderQueue();
+        toast("已清理完成/失败任务");
+      }],
+      ["#btnWbGenAssets", () => runGenAssets(false)],
+      ["#btnWbGenChrOnly", () => runGenAssets(true)],
+      ["#btnWbGotoS4", () => setStage("S4")],
+      ["#btnWbGenStills", () => runGenStills()],
+      ["#btnWbGenVideos", () => runGenVideos()]
     ];
     map.forEach(([sel, fn]) => {
       const el = $(sel);
@@ -675,15 +965,28 @@
         apiToggle.textContent = body.hidden ? "▸ llama.cpp / API 设置" : "▾ llama.cpp / API 设置";
       });
     }
+    const comfyToggle = $("#wbComfyToggle");
+    if (comfyToggle) {
+      comfyToggle.addEventListener("click", () => {
+        const body = $("#wbComfyBody");
+        if (!body) return;
+        body.hidden = !body.hidden;
+        comfyToggle.textContent = body.hidden ? "▸ ComfyUI 设置" : "▾ ComfyUI 设置";
+      });
+    }
   }
 
   function init() {
     loadApiIntoWorkbench();
+    loadComfyIntoWorkbench();
     bind();
     setUiMode("bricks");
     setStage("S0");
     const ver = $("#wbVersion");
-    if (ver) ver.textContent = "v1.6.0 Phase A";
+    if (ver) ver.textContent = "v1.7.0 Phase B";
+    const C = comfy();
+    if (C && C.onQueueChange) C.onQueueChange(renderQueue);
+    renderQueue();
     // expose
     window.NSFWWorkbench = {
       getState: () => wb,
@@ -694,6 +997,9 @@
       runStoryboard,
       runCompile,
       runPipeline,
+      runGenAssets,
+      runGenStills,
+      runGenVideos,
       STAGES
     };
   }

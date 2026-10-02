@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>NSFW H3 漫剧工作台 / 提示词组合器 · 21+ · v1.6.0</title>
+  <title>NSFW H3 漫剧工作台 / 提示词组合器 · 21+ · v1.7.0</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,7 +14,7 @@
     <header class="hero">
       <div>
         <h1>性爱视频提示词组合器</h1>
-        <div class="sub">MINIMAX H3 漫剧工作台 / LTX / QWEN · 积木 · 时间轴 · 导演台 · Phase A 提示词一体 · <span id="stats"></span></div>
+        <div class="sub">MINIMAX H3 漫剧工作台 / LTX / QWEN · 积木 · 时间轴 · 导演台 · Phase B ComfyUI 媒体队列 · <span id="stats"></span></div>
       </div>
       <div class="hero-right">
         <div class="lang-toggle">
@@ -35,21 +35,25 @@
     <div id="workbenchRoot" class="workbench" hidden>
       <div class="panel wb-top">
         <div class="timeline-head">
-          <h2>H3 漫剧工作台 · Phase A（只出提示词）</h2>
-          <span class="count" id="wbVersion">v1.6.0</span>
+          <h2>H3 漫剧工作台 · Phase B（提示词 + ComfyUI）</h2>
+          <span class="count" id="wbVersion">v1.7.0</span>
         </div>
-        <p class="hint">一句话 → 扩写 → 资材 → 分镜 → MiniMax H3 官方壳。技能包：文戏 / 影视 / JP-AV→H3。接 llama.cpp OpenAI 兼容接口。ComfyUI 生图生视频留待 Phase B。</p>
+        <p class="hint">一句话 → 扩写 → 资材 →（可选）资产图 → 分镜 → H3 壳 → 分镜静帧 / I2V。技能包：文戏 / 影视 / JP-AV→H3。文本走 llama.cpp；媒体走本地 ComfyUI <code>/prompt</code>。</p>
         <nav class="wb-stages" aria-label="管线阶段">
           <button type="button" class="wb-stage active" data-stage="S0">S0 立项锁</button>
           <button type="button" class="wb-stage" data-stage="S1">S1 扩写</button>
           <button type="button" class="wb-stage" data-stage="S2">S2 资材</button>
+          <button type="button" class="wb-stage" data-stage="S3">S3 资产图</button>
           <button type="button" class="wb-stage" data-stage="S4">S4 分镜</button>
           <button type="button" class="wb-stage" data-stage="S5">S5 H3 壳</button>
+          <button type="button" class="wb-stage" data-stage="S6">S6 静帧</button>
+          <button type="button" class="wb-stage" data-stage="S7">S7 视频</button>
         </nav>
         <div class="actions" style="margin-top:10px">
           <button type="button" class="btn primary" id="btnWbRunAll">一键跑通 S1→S5（本地）</button>
           <button type="button" class="btn" id="btnWbExport">导出项目 JSON</button>
           <button type="button" class="btn ghost" id="wbApiToggle">▸ llama.cpp / API 设置</button>
+          <button type="button" class="btn ghost" id="wbComfyToggle">▸ ComfyUI 设置</button>
         </div>
         <div id="wbApiBody" class="dir-api-body" hidden>
           <div class="director-controls">
@@ -71,7 +75,57 @@
           </div>
           <p class="hint">与导演台共用同一套设置键。推荐 <code>llama-server --port 8080</code> 并开启 CORS。</p>
         </div>
+        <div id="wbComfyBody" class="dir-api-body" hidden>
+          <div class="director-controls">
+            <div>
+              <label for="wbComfyBase">ComfyUI Base URL</label>
+              <input type="text" id="wbComfyBase" placeholder="http://127.0.0.1:8188" />
+            </div>
+            <div>
+              <label for="wbComfyAuth">可选 Auth（Bearer / 完整 Authorization）</label>
+              <input type="password" id="wbComfyAuth" placeholder="可空" autocomplete="off" />
+            </div>
+            <div>
+              <label for="wbComfyCkpt">Checkpoint 文件名</label>
+              <input type="text" id="wbComfyCkpt" placeholder="sd_xl_base_1.0.safetensors" />
+            </div>
+            <div>
+              <label for="wbComfyWfAsset">S3 资产工作流</label>
+              <input type="text" id="wbComfyWfAsset" placeholder="comfy-workflows/wf_asset_t2i.json" />
+            </div>
+            <div>
+              <label for="wbComfyWfStill">S6 静帧工作流</label>
+              <input type="text" id="wbComfyWfStill" placeholder="comfy-workflows/wf_storyboard_still.json" />
+            </div>
+            <div>
+              <label for="wbComfyWfI2v">S7 I2V 工作流</label>
+              <input type="text" id="wbComfyWfI2v" placeholder="comfy-workflows/wf_generic_i2v.json" />
+            </div>
+            <div>
+              <label for="wbComfyW">宽</label>
+              <input type="number" id="wbComfyW" min="64" step="8" value="768" />
+            </div>
+            <div>
+              <label for="wbComfyH">高</label>
+              <input type="number" id="wbComfyH" min="64" step="8" value="1344" />
+            </div>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button type="button" class="btn secondary" id="btnWbSaveComfy">保存 Comfy 设置</button>
+            <button type="button" class="btn" id="btnWbPingComfy">测试连接</button>
+            <button type="button" class="btn ghost" id="btnWbClearJobs">清理已完成任务</button>
+          </div>
+          <p class="hint">浏览器直连需 ComfyUI <code>--enable-cors-header</code>，或跑 <code>python3 tools/comfy_cors_proxy.py</code> 后把 Base URL 改成 <code>http://127.0.0.1:8190</code>。默认不出图：须在 S3/S6/S7 显式排队。</p>
+          <div id="wbComfyPing" class="hint"></div>
+        </div>
         <div id="wbStatus" class="polish-status" hidden></div>
+        <div id="wbQueuePanel" class="wb-queue-panel">
+          <div class="timeline-head" style="margin-top:12px">
+            <h2 style="font-size:14px;margin:0">ComfyUI 任务队列</h2>
+            <span class="count" id="wbQueueCount">0</span>
+          </div>
+          <div id="wbQueueHost" class="wb-queue-host"><p class="hint">尚无媒体任务</p></div>
+        </div>
       </div>
 
       <div class="wb-pane panel" data-pane="S0">
@@ -147,7 +201,7 @@
 
       <div class="wb-pane panel" data-pane="S2" hidden>
         <h2>S2 资材提取（CHR / SCN / PRP）</h2>
-        <p class="hint">默认只出提示词，不出图（Phase B 再接 ComfyUI）。请确认清单后再进分镜。</p>
+        <p class="hint">先确认资材提示词；出图请到 S3（显式排队，默认不出图）。</p>
         <div class="actions">
           <button type="button" class="btn primary" id="btnWbAssetsLocal">本地提取</button>
           <button type="button" class="btn secondary" id="btnWbAssetsLlm">LLM 提取</button>
@@ -175,6 +229,41 @@
         </div>
         <label for="wbJobsOut" style="margin-top:10px">JOB 预览</label>
         <textarea id="wbJobsOut" rows="16" spellcheck="false" class="mono"></textarea>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S3" hidden>
+        <h2>S3 资材出图（ComfyUI）</h2>
+        <p class="hint">把 S2 CHR/SCN（及可选 PRP）提示词投入资产 T2I 工作流。需本机 ComfyUI 在线且工作流 checkpoint 可用。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbGenAssets">排队生成全部 CHR+SCN</button>
+          <button type="button" class="btn" id="btnWbGenChrOnly">仅角色 CHR</button>
+          <button type="button" class="btn secondary" id="btnWbGotoS4">确认后去 S4 分镜</button>
+        </div>
+        <div id="wbAssetMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S6" hidden>
+        <h2>S6 分镜静帧（ComfyUI）</h2>
+        <p class="hint">用镜头卡动作文案生成关键帧 / 首帧静图，可作 I2V 参考。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbGenStills">排队生成全部分镜静帧</button>
+        </div>
+        <div id="wbStillMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S7" hidden>
+        <h2>S7 视频生成钩子（ComfyUI I2V）</h2>
+        <p class="hint">将 S5 每个 H3 JOB 的详细描述投入 I2V 工作流模板。默认 <code>wf_generic_i2v.json</code> 是可改的脚手架——请换成你本机真实 I2V API 图。参考图文件名填 Comfy <code>input/</code> 下已有文件。</p>
+        <div class="director-controls">
+          <div>
+            <label for="wbI2vRef">默认参考图文件名（Comfy input/）</label>
+            <input type="text" id="wbI2vRef" placeholder="example.png" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <button type="button" class="btn primary" id="btnWbGenVideos">按 H3 JOBs 排队 I2V</button>
+        </div>
+        <div id="wbVideoMediaHost" class="wb-media-grid" style="margin-top:10px"></div>
       </div>
     </div>
 
@@ -354,6 +443,7 @@
   <script src="director.js"></script>
   <script src="skills/packs.js"></script>
   <script src="app.js"></script>
+  <script src="comfy.js"></script>
   <script src="workbench.js"></script>
 </body>
 </html>

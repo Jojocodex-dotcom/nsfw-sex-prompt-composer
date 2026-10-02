@@ -337,12 +337,11 @@
   async function callChatCompletions({ baseUrl, apiKey, model, system, user, temperature }) {
     const root = (baseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
     const url = root + "/chat/completions";
+    const headers = { "Content-Type": "application/json" };
+    if (apiKey) headers.Authorization = "Bearer " + apiKey;
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + apiKey
-      },
+      headers,
       body: JSON.stringify({
         model: model || "gpt-4o-mini",
         temperature: temperature == null ? 0.4 : temperature,

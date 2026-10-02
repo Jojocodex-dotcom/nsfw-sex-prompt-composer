@@ -7,7 +7,7 @@
 
 | 目录 | 是什么 | 给谁用 |
 |------|--------|--------|
-| [`web-app/`](./web-app/) | **独立网页程序**（可视化点选组合器） | 浏览器直接打开，不依赖 ComfyUI |
+| [`web-app/`](./web-app/) | **独立网页**（积木组合器 + **H3 漫剧工作台 Phase A**） | 浏览器直接打开，不依赖 ComfyUI |
 | [`ComfyUI-NSFWPromptComposer/`](./ComfyUI-NSFWPromptComposer/) | **ComfyUI 自定义节点插件** | 复制进 `ComfyUI/custom_nodes/` |
 | [`docs/`](./docs/) | 说明文档、填空话术、调研与变更记录 | 阅读 / 复制文案 |
 | [`shared/`](./shared/) | 共享积木数据 `prompt_data.json` | 由网页数据导出，供对照 |
@@ -29,11 +29,15 @@ python3 -m http.server 8765
 | `index.html` | 页面结构 |
 | `app.js` | 组合逻辑、时间轴、分条 H3、AI 润色开关、复制/导出 |
 | `director.js` | 情节导演台（本地规则 + 可选 LLM 编排/润色） |
-| `data.js` | 姿势/场景/重口味等积木数据（**主数据源** v1.3） |
+| `data.js` | 姿势/场景/重口味等积木数据（**主数据源** v1.6） |
+| `workbench.js` / `skills/` | 漫剧工作台阶段条与技能短核 |
 | `styles.css` | 样式 |
 | `preview.png` | 界面预览图 |
 
-功能：选模型（H3 / Qwen）→ 选模式（I2V / 多参考）→ **情节导演台**（本地/LLM 编排）→ 点选积木（含重口味 CNC）→ **多动作时间轴** → 直接组装或可选 **AI 润色** → 按 H3 JOB（各 ≤15s）复制正/负提示词。
+功能：顶栏可切换 **积木组合器** / **漫剧工作台**（v1.6.0）。
+
+- 组合器：选模型 → I2V/多参考 → 导演台 → 积木 → 时间轴 → 直接组装或 AI 润色 → H3 JOB（≤15s）或 LTX 单组。
+- 工作台 Phase A：S0 锁 → S1 扩写 → S2 资材 → S4 分镜 → S5 H3 壳；技能包 `web-app/skills/`；接 llama.cpp `/v1/chat/completions`。**尚未**自动 ComfyUI 生图/生视频。
 
 ---
 

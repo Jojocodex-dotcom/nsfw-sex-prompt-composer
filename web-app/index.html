@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>性爱视频提示词组合器 · 21+</title>
+  <title>NSFW H3 漫剧工作台 / 提示词组合器 · 21+ · v1.6.0</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,19 +14,172 @@
     <header class="hero">
       <div>
         <h1>性爱视频提示词组合器</h1>
-        <div class="sub">MINIMAX H3 / LTX 2.5 / QWEN · 积木点选 · 动作时间轴 · 情节导演台 · I2V &amp; 多参考 · <span id="stats"></span></div>
+        <div class="sub">MINIMAX H3 漫剧工作台 / LTX / QWEN · 积木 · 时间轴 · 导演台 · Phase A 提示词一体 · <span id="stats"></span></div>
       </div>
-      <div class="lang-toggle">
-        <label for="langSelect">输出语言</label>
-        <select id="langSelect">
-          <option value="both" selected>中英双语</option>
-          <option value="en">英文为主</option>
-          <option value="zh">中文为主</option>
-        </select>
+      <div class="hero-right">
+        <div class="lang-toggle">
+          <label for="langSelect">输出语言</label>
+          <select id="langSelect">
+            <option value="both" selected>中英双语</option>
+            <option value="en">英文为主</option>
+            <option value="zh">中文为主</option>
+          </select>
+        </div>
+        <div class="seg ui-mode-seg" title="切换积木组合器 / 漫剧工作台">
+          <button type="button" class="active" data-ui-mode="bricks">积木组合器</button>
+          <button type="button" data-ui-mode="workbench">漫剧工作台</button>
+        </div>
       </div>
     </header>
 
-    <div class="controls-top">
+    <div id="workbenchRoot" class="workbench" hidden>
+      <div class="panel wb-top">
+        <div class="timeline-head">
+          <h2>H3 漫剧工作台 · Phase A（只出提示词）</h2>
+          <span class="count" id="wbVersion">v1.6.0</span>
+        </div>
+        <p class="hint">一句话 → 扩写 → 资材 → 分镜 → MiniMax H3 官方壳。技能包：文戏 / 影视 / JP-AV→H3。接 llama.cpp OpenAI 兼容接口。ComfyUI 生图生视频留待 Phase B。</p>
+        <nav class="wb-stages" aria-label="管线阶段">
+          <button type="button" class="wb-stage active" data-stage="S0">S0 立项锁</button>
+          <button type="button" class="wb-stage" data-stage="S1">S1 扩写</button>
+          <button type="button" class="wb-stage" data-stage="S2">S2 资材</button>
+          <button type="button" class="wb-stage" data-stage="S4">S4 分镜</button>
+          <button type="button" class="wb-stage" data-stage="S5">S5 H3 壳</button>
+        </nav>
+        <div class="actions" style="margin-top:10px">
+          <button type="button" class="btn primary" id="btnWbRunAll">一键跑通 S1→S5（本地）</button>
+          <button type="button" class="btn" id="btnWbExport">导出项目 JSON</button>
+          <button type="button" class="btn ghost" id="wbApiToggle">▸ llama.cpp / API 设置</button>
+        </div>
+        <div id="wbApiBody" class="dir-api-body" hidden>
+          <div class="director-controls">
+            <div>
+              <label for="wbApiBase">llama.cpp Base URL</label>
+              <input type="text" id="wbApiBase" placeholder="http://127.0.0.1:8080/v1" />
+            </div>
+            <div>
+              <label for="wbApiKey">API Key（可空 / sk-local）</label>
+              <input type="password" id="wbApiKey" placeholder="sk-local" autocomplete="off" />
+            </div>
+            <div>
+              <label for="wbApiModel">模型名</label>
+              <input type="text" id="wbApiModel" placeholder="local-model" />
+            </div>
+          </div>
+          <div class="actions" style="margin-top:8px">
+            <button type="button" class="btn secondary" id="btnWbSaveApi">保存到 localStorage</button>
+          </div>
+          <p class="hint">与导演台共用同一套设置键。推荐 <code>llama-server --port 8080</code> 并开启 CORS。</p>
+        </div>
+        <div id="wbStatus" class="polish-status" hidden></div>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S0">
+        <h2>S0 立项锁</h2>
+        <div class="director-controls">
+          <div>
+            <label>模型</label>
+            <input type="text" value="MiniMax H3（默认锁定）" disabled />
+          </div>
+          <div>
+            <label for="wbAspect">画幅</label>
+            <select id="wbAspect">
+              <option value="9:16" selected>9:16</option>
+              <option value="16:9">16:9</option>
+              <option value="1:1">1:1</option>
+              <option value="4:3">4:3</option>
+              <option value="3:4">3:4</option>
+              <option value="21:9">21:9</option>
+            </select>
+          </div>
+          <div>
+            <label for="wbNsfwTier">NSFW 强度</label>
+            <select id="wbNsfwTier">
+              <option value="soft_av">soft_av</option>
+              <option value="explicit" selected>explicit</option>
+              <option value="dark_cnc">dark_cnc</option>
+            </select>
+          </div>
+          <div>
+            <label for="wbSkillMode">技能模式</label>
+            <select id="wbSkillMode">
+              <option value="drama_only">文戏为主</option>
+              <option value="av_main">JP-AV 主戏</option>
+              <option value="mixed" selected>混合</option>
+            </select>
+          </div>
+          <div>
+            <label for="wbTargetSec">目标总时长（秒）</label>
+            <input type="number" id="wbTargetSec" min="5" max="180" value="45" />
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <h2 style="margin-bottom:8px">模式</h2>
+          <div class="seg wb-mode-seg">
+            <button type="button" class="active" data-wb-mode="i2v">I2V / FL2VA</button>
+            <button type="button" data-wb-mode="multiref">Ref2VA 多参考</button>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <h2 style="margin-bottom:8px">剪辑</h2>
+          <div class="seg wb-edit-seg">
+            <button type="button" class="active" data-wb-edit="continuous">一镜到底</button>
+            <button type="button" data-wb-edit="multicut">多镜头</button>
+          </div>
+        </div>
+        <label for="wbSource" style="margin-top:12px">一句话 / 短剧情</label>
+        <textarea id="wbSource" rows="4" spellcheck="false" placeholder="示例：爱情旅馆里，一对明显21+的成年情侣从亲吻解衣到传教士，再抽出换后入，最后加速收束。写实、可听见拍击反馈。"></textarea>
+        <p class="hint">锁定后进入 S1。下方积木/时间轴仍可手工微调，S5 会复用现有 H3 组装器。</p>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S1" hidden>
+        <h2>S1 文本扩写</h2>
+        <p class="hint">文戏 skill + 可选 JP-AV 节拍。本地规则可离线；LLM 走 llama.cpp。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbExpandLocal">本地扩写</button>
+          <button type="button" class="btn secondary" id="btnWbExpandLlm">LLM 扩写</button>
+        </div>
+        <label for="wbExpandOut" style="margin-top:10px">扩写结果</label>
+        <textarea id="wbExpandOut" rows="8" spellcheck="false"></textarea>
+        <label for="wbBeatsOut" style="margin-top:8px">节拍 JSON</label>
+        <textarea id="wbBeatsOut" rows="6" spellcheck="false" class="mono"></textarea>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S2" hidden>
+        <h2>S2 资材提取（CHR / SCN / PRP）</h2>
+        <p class="hint">默认只出提示词，不出图（Phase B 再接 ComfyUI）。请确认清单后再进分镜。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbAssetsLocal">本地提取</button>
+          <button type="button" class="btn secondary" id="btnWbAssetsLlm">LLM 提取</button>
+        </div>
+        <div id="wbAssetsHost" style="margin-top:10px"></div>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S4" hidden>
+        <h2>S4 分镜镜头卡</h2>
+        <p class="hint">影视机位 + JP-AV 动作链 + 段缝末态。仍可在下方时间轴改积木秒数。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbShotsLocal">本地分镜</button>
+          <button type="button" class="btn secondary" id="btnWbShotsLlm">LLM 分镜</button>
+        </div>
+        <div id="wbShotsHost" class="wb-shots" style="margin-top:10px"></div>
+        <p class="hint" id="wbSeamNotes"></p>
+      </div>
+
+      <div class="wb-pane panel" data-pane="S5" hidden>
+        <h2>S5 MiniMax H3 官方壳</h2>
+        <p class="hint">复用 app.js：FL2VA 三字段 / Ref2VA 六字段；自动拆 ≤15s JOB。可将结果复制到 Comfy / 海螺。</p>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btnWbCompile">组装 H3 壳 → 时间轴</button>
+          <button type="button" class="btn secondary" id="btnWbCopyJobs">复制全部 JOB</button>
+        </div>
+        <label for="wbJobsOut" style="margin-top:10px">JOB 预览</label>
+        <textarea id="wbJobsOut" rows="16" spellcheck="false" class="mono"></textarea>
+      </div>
+    </div>
+
+
+    <div class="controls-top" data-brick-ui>
       <div class="panel">
         <h2>模型</h2>
         <div class="seg">
@@ -46,7 +199,7 @@
       </div>
     </div>
 
-    <div class="panel director-panel" id="directorPanel">
+    <div class="panel director-panel" id="directorPanel" data-brick-ui data-hide-in-wb>
       <div class="timeline-head">
         <h2>情节导演台 / Story Director</h2>
         <span class="count" id="dirCountHint">粘贴章节 → 编排时间轴</span>
@@ -102,7 +255,7 @@
       </div>
     </div>
 
-    <div class="panel timeline-panel" id="timelinePanel">
+    <div class="panel timeline-panel" id="timelinePanel" data-brick-ui>
       <div class="timeline-head">
         <h2>动作时间轴 / 一套组合</h2>
         <span class="count" id="tlTotal">总时长 0s · 0 段</span>
@@ -132,7 +285,7 @@
       <p class="tl-warn" id="tlWarn" hidden></p>
     </div>
 
-    <div class="layout">
+    <div class="layout" data-brick-ui>
       <div>
         <div class="actions" style="margin-bottom:12px">
           <button type="button" class="btn warn" id="btnRandom">🎲 随机组合</button>
@@ -191,14 +344,16 @@
     </div>
 
     <footer class="note">
-      本地单页工具 · 零构建依赖 · 仅生成提示词模板 · 不生成或托管色情媒体文件<br/>
-      打开方式：双击 index.html，或 <code>cd web-app && python3 -m http.server 8765</code>
+      本地单页工具 · v1.6.0 漫剧工作台 Phase A · 零构建依赖 · 仅生成提示词模板 · 不生成或托管色情媒体文件<br/>
+      打开方式：双击 index.html，或 <code>cd web-app && python3 -m http.server 8765</code> · 技能包见 <code>skills/</code>
     </footer>
   </div>
 
   <div class="toast" id="toast"></div>
   <script src="data.js"></script>
   <script src="director.js"></script>
+  <script src="skills/packs.js"></script>
   <script src="app.js"></script>
+  <script src="workbench.js"></script>
 </body>
 </html>

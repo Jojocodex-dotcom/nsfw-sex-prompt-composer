@@ -1,6 +1,6 @@
-# 性爱视频提示词组合器（独立网页 · v1.5.3）
+# NSFW H3 漫剧工作台 / 性爱提示词组合器（独立网页 · v1.6.0）
 
-纯前端，不依赖 ComfyUI。
+纯前端，不依赖 ComfyUI。**Phase A：提示词一体 MVP**（扩写 → 资材 → 分镜 → H3 壳）。生图/生视频见后续 Phase B。
 
 ```bash
 python3 -m http.server 8765
@@ -9,45 +9,44 @@ python3 -m http.server 8765
 
 | 文件 | 作用 |
 |------|------|
-| `index.html` | 页面（导演台 + 时间轴 + 预览） |
+| `index.html` | 积木组合器 + **漫剧工作台**阶段条 |
+| `workbench.js` | S0–S5 管线（本地规则 + 可选 LLM） |
+| `skills/` | 文戏 / 影视 / JP-AV→H3 技能短核 |
 | `data.js` | 积木主数据（含 `darkActs`） |
-| `director.js` | 情节导演台 / 可选 LLM |
+| `director.js` | 情节导演台 / OpenAI 兼容（含 llama.cpp） |
 | `app.js` | 组合、H3 官方壳分包、LTX 单组多 SHOT、AI 润色 |
 | `styles.css` | 样式 |
+| `prompt-library/grokclip/` | Grokclip house 润色内核 |
+
+## 两种 UI 模式
+
+1. **积木组合器**（默认）— 原有点选 + 时间轴 + 导演台，不受破坏。  
+2. **漫剧工作台** — ArcReel 式阶段条：S0 立项锁 → S1 扩写 → S2 资材 → S4 分镜 → S5 H3 壳。
 
 ## 模型差异
 
 | 模型 | 主输出 |
 |------|--------|
-| **LTX 2.5** (`ltx_2_5`) | **单提示词组**多 SHOT 带时间：`[GLOBAL]` + `[SHOT n \| start–end]`；时间紧挨；不拆 H3 JOB；不写 H3 字段名 |
-| **MINIMAX H3** (`minimax_h3`) | 官方壳 / 可拆 ≤15s 多 JOB（FL2VA 三字段或 Ref2VA 六字段） |
+| **LTX 2.5** (`ltx_2_5`) | **单提示词组**多 SHOT 带时间：`[GLOBAL]` + `[SHOT n \| start–end]`；不拆 H3 JOB；不写 H3 字段名 |
+| **MINIMAX H3** (`minimax_h3`) | 官方壳 / 可拆 ≤15s 多 JOB（FL2VA 三字段或 Ref2VA 六字段）— **工作台默认** |
 | **QWEN IMAGE 2.1** | 自然语言段落风格 |
 
-### LTX 2.5 示例形态
+### MiniMax H3 官方壳
 
-```
-[GLOBAL] scene + 21+ identity lock + light/sound
-[SHOT 1 | 00:00–00:04] action + one camera
-[SHOT 2 | 00:04–00:12] ...
-```
+- **FL2VA / I2VA（mode=i2v）** — 三字段：`integrated_multimodal_description` / `overall_soundscape` / `non_diegetic_music`
+- **Ref2VA（mode=multiref）** — 六字段：`subject_definitions` / `summary` / `retention_analysis` / `detailed_description` / `overall_soundscape` / `non_diegetic_music`（勿用 integrated_multimodal_description）
+- 每条 ≤15s JOB；job2+ 用上条末帧衔接语。
 
-### MiniMax H3 官方壳（model = minimax_h3）
+## llama.cpp
 
-- **FL2VA / I2VA（图文生视频，mode=i2v）** — 三字段：
-  - `integrated_multimodal_description:` + setup + `[Shot N]`（Shot1 无 At；其后 `At MM:SS.mmm`）
-  - `overall_soundscape:`
-  - `non_diegetic_music: N/A`
-- **Ref2VA（多参考，mode=multiref）** — 六字段：
-  - `subject_definitions:` / `summary:` / `retention_analysis:` / `detailed_description:`（含 Shot）/ `overall_soundscape:` / `non_diegetic_music:`
-  - **不要**使用 `integrated_multimodal_description`
-- 每条 ≤15s JOB 为完整官方壳；job2+ 用上条末帧。复制按钮粘贴壳字段正文。
+工作台顶部「llama.cpp / API 设置」：
 
-## AI 润色显示
+- Base URL 示例：`http://127.0.0.1:8080/v1`
+- 与导演台共用 localStorage 键；Key 可空或 `sk-local`
+- 需服务端允许浏览器 CORS
 
-- 开启「AI 润色」并配置 API 后：
-  - **H3 / Qwen**：按 JOB 润色，写入主预览与各 JOB 卡片（标签「润色后」）。
-  - **LTX 2.5**：整组 `[GLOBAL]+[SHOT…]` 一次润色，写入主预览。
-- 原文仍可通过「复制原文」或下方「AI 润色后」对照区获取。
-- 失败时状态条报错并保留直接组装稿；改积木/时间轴会失效旧润色缓存。
+## AI 润色
 
-暗黑 CNC 模块均为 21+ 虚构。
+仍在右侧预览区：H3 按 JOB；LTX 整组一次。工作台 S5 先出官方壳；润色可选。
+
+暗黑 CNC 模块均为 21+ 虚构。禁止未成年 / 真实名人 likeness。

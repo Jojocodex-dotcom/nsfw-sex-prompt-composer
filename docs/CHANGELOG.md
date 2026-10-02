@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 1.6.0 — 2026-10-02
+
+### 漫剧工作台 Phase A（提示词一体 MVP）
+- 在现有 `web-app` 上增加 **积木组合器 / 漫剧工作台** 双模式；不破坏原积木流与 LTX 路径。
+- 阶段条 **S0→S1→S2→S4→S5**：立项锁、文本扩写、资材提取、分镜镜头卡、MiniMax H3 官方壳组装。
+- 技能短核 `web-app/skills/`：文戏 / 影视 / JP-AV→H3（运行时 `packs.js`）。
+- llama.cpp 设置 UI（与导演台共用 localStorage）；`callChatCompletions` 允许空 API Key。
+- **不做**：ComfyUI 生图生视频、ArcReel fork。
+
 ## 1.4.0 — 2026-09-25
 
 ### ComfyUI 重设计（更少节点、打开即懂）
